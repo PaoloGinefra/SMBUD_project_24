@@ -19,3 +19,7 @@
 [Main dataset](https://www.kaggle.com/datasets/shuyangli94/food-com-recipes-and-user-interactions/data?select=PP_users.csv)
 
 [More detailed one](https://www.kaggle.com/datasets/irkaal/foodcom-recipes-and-reviews)
+
+Possibile improvements:
+
+- Add nutrational value for ingredients
