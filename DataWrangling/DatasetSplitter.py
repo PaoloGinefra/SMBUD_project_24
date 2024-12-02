@@ -1,5 +1,4 @@
 import pandas as pd
-import numpy as np
 import os
 
 
@@ -53,7 +52,7 @@ class DatasetSplitter:
         :param data: The data to be saved.
         '''
         nEntries = len(data)
-        outFileDir = self.outputDir + self.fileName + f'[{nEntries}].csv'
+        outFileDir = self.outputDir + self.fileName + f'({nEntries}).csv'
         data.to_csv(outFileDir, index=False)
 
         print('Data saved to ' + outFileDir)
@@ -84,4 +83,10 @@ if __name__ == '__main__':
         csvFilepath='./Dataset/recipes.csv',
         outputDir=Neo4JImportPath
     )
-    splitter.splitAndSaveEntries(1000)
+    splitter.splitAndSaveEntries(10000)
+
+    splitter = DatasetSplitter(
+        csvFilepath='./Dataset/reviews.csv',
+        outputDir=Neo4JImportPath
+    )
+    splitter.splitAndSaveEntries(10000)
