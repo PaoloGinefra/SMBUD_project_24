@@ -1,0 +1,40 @@
+@startuml Neo4J_schema
+class Recipe{
+    +id: int
+    +name: string
+    +calories: int
+    +contents: int
+    +RecipeServings: int
+    +cookTime: int
+    +prepTime: int
+    +totalTime: int
+}
+
+class Ingredient{
+    +name: string
+}
+
+class Keyword{
+    +name: string
+}
+
+class RecipeCategory{
+    +name: string
+}
+
+class User{
+    +id: int
+}
+
+class Review{
+    +rating: int
+    +comment: string
+}
+
+Recipe --> Ingredient : Contains
+Recipe --> Keyword : Described by
+Recipe --> RecipeCategory : Belongs to
+Recipe --> User : Created by
+Review --> Recipe : For
+Review --> User : By
+@enduml
