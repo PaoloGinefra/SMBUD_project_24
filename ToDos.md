@@ -1,7 +1,7 @@
 # General
 
-- Fix GitHub
-- Split the dataset in python based on the number of entries
+- [x] Fix GitHub
+- [ ] Split the dataset in python based on the number of entries
 
 # Neo4J
 
@@ -9,5 +9,7 @@
 - Queries
 
 # Other DB
+
+- Research options
 
 # Report
