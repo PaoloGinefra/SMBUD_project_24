@@ -13,3 +13,5 @@
 - Research options
 
 # Report
+
+- Explain why the time is integer in elasticsearch
