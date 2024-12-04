@@ -1,4 +1,21 @@
 import pandas as pd
+from halo import Halo
+
+spinner = Halo(text='Loading', spinner='dots')
+
+
+def printSuccess(message):
+    spinner.stop()
+    print('\033[92m' + message + '\033[0m')
+
+
+def printError(message):
+    print('\033[91m' + message + '\033[0m')
+
+
+def printStarting(message):
+    print('\033[94m' + message + '\033[0m')
+    spinner.start()
 
 
 def sanitize_quotes(value):
@@ -13,49 +30,49 @@ Neo4JImportPath = 'C:\\Users\\Paolo\\.Neo4jDesktop\\relate-data\\dbmss\\dbms-d41
 nEntries = 10000
 
 
-print('Loading data from ' + csvFilepath_recepies + '...')
+printStarting('Loading data from ' + csvFilepath_recepies + '...')
 recepies = pd.read_csv(csvFilepath_recepies)
-print('Data loaded from ' + csvFilepath_recepies)
+printSuccess('Data loaded from ' + csvFilepath_recepies)
 
-print('Sanitizing data...')
+printStarting('Sanitizing data...')
 recepies = recepies.map(sanitize_quotes)
-print('Data sanitized')
+printSuccess('Data sanitized')
 
 print('Data shape: ' + str(recepies.shape))
 
 seed = 42
-print('Shuffling data...')
+printStarting('Shuffling data...')
 recepies = recepies.sample(frac=1, random_state=seed).reset_index(drop=True)
-print('Data shuffled')
+printSuccess('Data shuffled')
 
 splitData = recepies.iloc[:nEntries]
-print('Data splited into shape: ' + str(splitData.shape))
+printSuccess('Data splited into shape: ' + str(splitData.shape))
 
 outFileDir = Neo4JImportPath + 'recipes(' + str(nEntries) + ').csv'
 
-print('Saving data to ' + outFileDir + '...')
+printStarting('Saving data to ' + outFileDir + '...')
 splitData.to_csv(outFileDir, index=False)
-print('Data saved to ' + outFileDir)
+printSuccess('Data saved to ' + outFileDir)
 
 
 recepieIndices = splitData['RecipeId']
 
-print('Loading data from ' + csvFilepath_reviews + '...')
+printStarting('Loading data from ' + csvFilepath_reviews + '...')
 reviews = pd.read_csv(csvFilepath_reviews)
-print('Data loaded from ' + csvFilepath_reviews)
+printSuccess('Data loaded from ' + csvFilepath_reviews)
 
-print('Sanitizing data...')
+printStarting('Sanitizing data...')
 reviews = reviews.map(sanitize_quotes)
-print('Data sanitized')
+printSuccess('Data sanitized')
 
 print('Data shape: ' + str(reviews.shape))
 
-print('Filtering relevant reviews...')
+printStarting('Filtering relevant reviews...')
 relevantReviews = reviews[reviews['RecipeId'].isin(recepieIndices)]
-print('Relevant reviews shape: ' + str(relevantReviews.shape))
+printSuccess('Relevant reviews shape: ' + str(relevantReviews.shape))
 
 outFileDir = Neo4JImportPath + 'reviews(' + str(nEntries) + ').csv'
 
-print('Saving data to ' + outFileDir + '...')
+printStarting('Saving data to ' + outFileDir + '...')
 relevantReviews.to_csv(outFileDir, index=False)
-print('Data saved to ' + outFileDir)
+printSuccess('Data saved to ' + outFileDir)
