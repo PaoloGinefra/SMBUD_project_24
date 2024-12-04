@@ -1,3 +1,81 @@
+## 6. Recipes that contain "healthy snacks" or are high-protein but exclude "dessert."
+```
+GET /recipes_in/_search
+{
+  "query": {
+    "bool": {
+      "should": [
+        { "match": { "Description": "healthy snacks" } },
+        { "range": { "ProteinContent": { "gte": 20 } } }
+      ],
+      "must_not": [
+        { "match":{"RecipeCategory": "dessert"} }
+      ]
+    }
+  }
+}
+```
+
+## Aggregation by author name of the authors with the best reviews
+```
+GET /reviews/_search
+{
+  "size": 0,
+  "query": {
+    "bool": {
+      "should": [
+        { "match": { "Review": "great" } },
+        { "match": { "Review": "excellent" } },
+        { "match": { "Review": "good" } },
+        { "match": { "Review": "amazing" } },
+        { "match": { "Review": "awesome" } }
+      ]
+    }
+  },
+  "aggs": {
+    "positive_sentiment_per_author": {
+      "terms": {
+        "field": "AuthorId",
+        "order": { "_count": "desc" }
+      },
+      "aggs": {
+        "projected_name": {
+          "top_hits": {
+            "_source": {
+              "includes": ["AuthorName"]
+            },
+            "size": 1
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+
+## 2. Detect Trends
+```
+Keyword Trends Over Time: Find how often "vegan" recipes are being reviewed each year.
+GET /recipes_in/_search
+{
+  "query": {
+    "term": {
+      "Keywords.keyword": "vegan"
+    }
+  },
+  "aggs": {
+    "vegan_reviews_over_time": {
+      "date_histogram": {
+        "field": "DatePublished",
+        "calendar_interval": "year"
+      }
+    }
+  }
+}
+```
+
+
 ## 1. Count the frequency of positive or negative sentiment keywords in a document to derive sentiment.
 {
   "aggs": {
@@ -6,22 +84,6 @@
     },
     "negative_words": {
       "terms": { "field": "review_text", "include": ["bad", "terrible", "horrible"] }
-    }
-  }
-}
-
-## 2. Detect Trends
-Keyword Trends Over Time: Find how often "vegan" recipes are being reviewed each year.
-{
-  "aggs": {
-    "vegan_reviews_over_time": {
-      "date_histogram": {
-        "field": "reviews.date",
-        "calendar_interval": "year"
-      },
-      "filter": {
-        "term": { "reviews.comment": "vegan" }
-      }
     }
   }
 }
@@ -76,23 +138,6 @@ Use Case: Recommend recipes based on a user’s preferences (e.g., high protein 
     }
   }
 }
-
-
-## 6. Recipes that contain "healthy snacks" or are high-protein but exclude "dessert."
-{
-  "query": {
-    "bool": {
-      "should": [
-        { "match_phrase": { "description": "healthy snacks" } },
-        { "range": { "protein": { "gte": 20 } } }
-      ],
-      "must_not": [
-        { "term": { "tags.keyword": "dessert" } }
-      ]
-    }
-  }
-}
-
 
 ## 7. Find recipes with similar steps / number of steps
 
