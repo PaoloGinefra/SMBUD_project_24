@@ -1,7 +1,7 @@
 Mistakes:
 ID's should be keywords, not integers (slides)
 
-# Mapping recipes
+## Mapping recipes
 ```
 PUT /recipes
 {
@@ -159,7 +159,7 @@ PUT /reviews
 
 
 
-## 6. Recipes that contain "healthy snacks" or are high-protein but exclude "dessert."
+## 1. Recipes that contain "healthy snacks" or are high-protein but exclude "dessert."
 ```
 GET /recipes_in/_search
 {
@@ -177,7 +177,7 @@ GET /recipes_in/_search
 }
 ```
 
-## Aggregation by author name of the authors with the best reviews
+## 2.Aggregation by author name of the authors with the best reviews
 ```
 GET /reviews/_search
 {
@@ -215,8 +215,192 @@ GET /reviews/_search
 ```
 
 
-## 2. Detect Trends
+## 3.Look for recipes that are easy and have a high rating
 ```
+GET /reviews/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "range": {
+            "Rating": {
+              "gte": 4
+            }
+          }
+        },
+        {
+          "match": {
+            "Review": {
+              "query": "easy quick fast simple cheap",
+              "operator": "or"
+            }
+          }
+        }
+      ]
+    }
+  }
+}
+```
+
+## 4.Finds contraddicting reviews with respects to the rating, either good reviews with a low rating or bad reviews with a high rating (nb: non va bene perche non trova cose che sono davvero contraddizioni)
+``` 
+GET /reviews/_search
+{
+  "query": {
+    "bool": {
+      "should": [
+        {
+          "bool": {
+            "must": [
+              {"range": {"Rating": {"gte": 4}}},
+              {"match": {
+                "Review": {
+                  "query": "bad hideous disgusting awful terrible horrible",
+                  "operator": "or"
+                }
+              }}
+            ],
+            "must_not": [
+              {
+                "match": {
+                  "Review": {
+                    "query": "not quite good amazing",
+                    "operator": "or"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "bool": {
+            "must": [
+              {"range": {"Rating": {"lte": 1}}},
+              {"match": {
+                "Review": {
+                  "query": "good amazing spectacular perfect super -bad",
+                  "operator": "or"
+                }
+              }}
+            ],
+            "must_not": [
+              {
+                "match": {
+                  "Review": {
+                    "query": "bad awful not",
+                    "operator": "or"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  }
+}
+
+```
+
+## 5. are vegan recipes considered good?
+```
+GET /reviews/_search
+{
+  "query": {
+    "bool": {
+      "filter": [
+        {
+          "match": {
+            "Review": "Vegan"
+          }
+        }
+      ],
+      "should": [
+        {
+          "range": {
+            "Rating": {
+              "gte": 4
+            }
+          }
+        },
+        {
+          "match": {
+            "Review": {
+              "query": "good amazing spectacular perfect super",
+              "operator": "or"
+            }
+          }
+        }
+      ],
+      "minimum_should_match": 1
+    }
+  }
+}
+```
+
+
+## 6. Recipes with certain ingredients and appliances 
+```
+GET /recipes/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "match": {
+            "RecipeIngredientParts": "chicken"
+          }
+        },
+        {
+          "match": {
+            "RecipeIngredientParts": "tomato"
+          }
+        },
+        {
+          "match": {
+            "RecipeIngredientParts": "onion"
+          }
+        },
+        {
+          "match": {
+            "RecipeIngredientParts": "salt"
+          }
+        }
+      ],
+      "should": [
+        {
+          "match": {
+            "RecipeInstructions": "oven"
+          }
+        },
+        {
+          "match": {
+            "RecipeInstructions": "pan"
+          }
+        }
+      ],
+      "filter": [
+        {
+          "range": {
+            "AggregatedRating": {
+              "gte": 4.5
+            }
+          }
+        }
+      ]
+    }
+  }
+}
+```
+
+
+
+
+## Analyze the average rating of recipes by cuisine or difficulty
+
+
+## 2. Detect Trends
 Keyword Trends Over Time: Find how often "vegan" recipes are being reviewed each year.
 GET /recipes_in/_search
 {
@@ -234,7 +418,6 @@ GET /recipes_in/_search
     }
   }
 }
-```
 
 
 ## 1. Count the frequency of positive or negative sentiment keywords in a document to derive sentiment.
