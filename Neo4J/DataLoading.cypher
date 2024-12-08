@@ -3,7 +3,7 @@ WITH HEADERS FROM "file: ///recipes(10000).csv" AS row
 WITH row
 WHERE row.RecipeId IS NOT null
 MERGE (r:Recipe { id: row.RecipeId })
-  ON CREATE SET r.Name = row.Name, r.Calories = row.Calories, r.RecipeServings = row.RecipeServings, r.CookTime = row.CookTime, r.PrepTime = row.PrepTime, r.TotalTime = row.TotalTime
+ON CREATE SET r.Name = row.Name, r.Calories = tofloat(row.Calories), r.RecipeServings = row.RecipeServings, r.CookTime = row.CookTime, r.PrepTime = row.PrepTime, r.TotalTime = row.TotalTime
 
 WITH r, row, trim(replace(row.Keywords, 'c(', '')) AS cleaned_keywords
 WITH r, row, trim(replace(cleaned_keywords, ')', '')) AS final_keywords
@@ -35,7 +35,7 @@ MERGE (reviewer:User { id: reviewRow.AuthorId })
   ON CREATE SET reviewer.name = reviewRow.AuthorName // Ensure name is set only on creation
 
 WITH reviewRow, reviewer
-MERGE (review:Review { id:reviewRow.ReviewId, rating: reviewRow.Rating, comment: coalesce(reviewRow.Review, 'No Comment') })
+MERGE (review:Review { id:reviewRow.ReviewId, rating: tointeger(reviewRow.Rating), comment: coalesce(reviewRow.Review, 'No Comment') })
 
 // Match the Recipe with the corresponding RecipeId from the reviews.csv
 WITH reviewRow, reviewer, review
