@@ -2,7 +2,10 @@ Mistakes:
 ID's should be keywords, not integers (slides)
 
 ## Mapping recipes
-```
+
+> TODO: Check date formatting
+
+```json
 PUT /recipes
 {
   "mappings": {
@@ -103,7 +106,7 @@ PUT /recipes
         "type": "float"
       },
       "RecipeServings": {
-        "type": "float"
+        "type": "float" //TODO: check if integer is better
       },
       "RecipeYield": {
         "type": "text",
@@ -117,8 +120,10 @@ PUT /recipes
   }
 }
 ```
+
 # Reviews index
-```
+
+```json
 PUT /reviews
 {
   "mappings": {
@@ -156,11 +161,9 @@ PUT /reviews
 }
 ```
 
-
-
-
 ## 1. Recipes that contain "healthy snacks" or are high-protein but exclude "dessert."
-```
+
+```json
 GET /recipes_in/_search
 {
   "query": {
@@ -178,7 +181,8 @@ GET /recipes_in/_search
 ```
 
 ## 2.Aggregation by author name of the authors with the best reviews
-```
+
+```json
 GET /reviews/_search
 {
   "size": 0,
@@ -214,9 +218,9 @@ GET /reviews/_search
 }
 ```
 
-
 ## 3.Look for recipes that are easy and have a high rating
-```
+
+```json
 GET /reviews/_search
 {
   "query": {
@@ -244,7 +248,8 @@ GET /reviews/_search
 ```
 
 ## 4.Finds contraddicting reviews with respects to the rating, either good reviews with a low rating or bad reviews with a high rating (nb: non va bene perche non trova cose che sono davvero contraddizioni)
-``` 
+
+```json
 GET /reviews/_search
 {
   "query": {
@@ -304,7 +309,8 @@ GET /reviews/_search
 ```
 
 ## 5. are vegan recipes considered good?
-```
+
+```json
 GET /reviews/_search
 {
   "query": {
@@ -339,9 +345,9 @@ GET /reviews/_search
 }
 ```
 
+## 6. Recipes with certain ingredients and appliances
 
-## 6. Recipes with certain ingredients and appliances 
-```
+```json
 GET /recipes/_search
 {
   "query": {
@@ -394,115 +400,113 @@ GET /recipes/_search
 }
 ```
 
-
-
-
 ## Analyze the average rating of recipes by cuisine or difficulty
 
-
 ## 2. Detect Trends
-Keyword Trends Over Time: Find how often "vegan" recipes are being reviewed each year.
-GET /recipes_in/_search
-{
-  "query": {
-    "term": {
-      "Keywords.keyword": "vegan"
-    }
-  },
-  "aggs": {
-    "vegan_reviews_over_time": {
-      "date_histogram": {
-        "field": "DatePublished",
-        "calendar_interval": "year"
-      }
-    }
-  }
-}
 
+Keyword Trends Over Time: Find how often "vegan" recipes are being reviewed each year.
+GET /recipes_in/\_search
+{
+"query": {
+"term": {
+"Keywords.keyword": "vegan"
+}
+},
+"aggs": {
+"vegan_reviews_over_time": {
+"date_histogram": {
+"field": "DatePublished",
+"calendar_interval": "year"
+}
+}
+}
+}
 
 ## 1. Count the frequency of positive or negative sentiment keywords in a document to derive sentiment.
-{
-  "aggs": {
-    "positive_words": {
-      "terms": { "field": "review_text", "include": ["great", "awesome", "happy"] }
-    },
-    "negative_words": {
-      "terms": { "field": "review_text", "include": ["bad", "terrible", "horrible"] }
-    }
-  }
-}
 
+{
+"aggs": {
+"positive_words": {
+"terms": { "field": "review_text", "include": ["great", "awesome", "happy"] }
+},
+"negative_words": {
+"terms": { "field": "review_text", "include": ["bad", "terrible", "horrible"] }
+}
+}
+}
 
 ## 3. "More Like This" Queries
 
 {
-  "query": {
-    "more_like_this": {
-      "fields": ["description", "ingredients"],
-      "like": "A delicious and moist chocolate cake",
-      "min_term_freq": 1,
-      "max_query_terms": 12
-    }
-  }
+"query": {
+"more_like_this": {
+"fields": ["description", "ingredients"],
+"like": "A delicious and moist chocolate cake",
+"min_term_freq": 1,
+"max_query_terms": 12
+}
+}
 }
 
 ## 4. Personalized Search
+
 Use Case: Recommend recipes based on a user’s preferences (e.g., high protein and low carb).
 {
-  "query": {
-    "bool": {
-      "must": [
-        { "range": { "protein": { "gte": 20 } } },
-        { "range": { "carbs": { "lte": 10 } } }
-      ],
-      "should": [
-        { "match": { "cuisine": "Mediterranean" } },
-        { "match": { "difficulty": "easy" } }
-      ]
-    }
-  }
+"query": {
+"bool": {
+"must": [
+{ "range": { "protein": { "gte": 20 } } },
+{ "range": { "carbs": { "lte": 10 } } }
+],
+"should": [
+{ "match": { "cuisine": "Mediterranean" } },
+{ "match": { "difficulty": "easy" } }
+]
+}
+}
 }
 
 ## 5. Analyze the average rating of recipes by cuisine and difficulty
 
 {
-  "aggs": {
-    "by_cuisine": {
-      "terms": { "field": "cuisine.keyword" },
-      "aggs": {
-        "by_difficulty": {
-          "terms": { "field": "difficulty.keyword" },
-          "aggs": {
-            "average_rating": {
-              "avg": { "field": "average_rating" }
-            }
-          }
-        }
-      }
-    }
-  }
+"aggs": {
+"by_cuisine": {
+"terms": { "field": "cuisine.keyword" },
+"aggs": {
+"by_difficulty": {
+"terms": { "field": "difficulty.keyword" },
+"aggs": {
+"average_rating": {
+"avg": { "field": "average_rating" }
+}
+}
+}
+}
+}
+}
 }
 
 ## 7. Find recipes with similar steps / number of steps
 
 ## 8. Given in input some ingredients that the user has at home, search for the recipes with those ingredients and the highest rating.
 
-## 9. Look for the users that made the worst reviews (both based on rating and on words used) 
+## 9. Look for the users that made the worst reviews (both based on rating and on words used)
 
 ## 10. Identify Sentiment Patterns in Reviews
+
 {
-  "query": {
-    "bool": {
-      "must": [
-        { "match": { "review_text": "delicious amazing" } },
-        { "match": { "review_text": "awful terrible" } }
-      ],
-      "boost": 2,
-      "should": [
-        { "match_phrase": { "review_text": "not good" } },
-        { "match_phrase": { "review_text": "never again" } }
-      ],
-      "minimum_should_match": 1
-    }
-  }
+"query": {
+"bool": {
+"must": [
+{ "match": { "review_text": "delicious amazing" } },
+{ "match": { "review_text": "awful terrible" } }
+],
+"boost": 2,
+"should": [
+{ "match_phrase": { "review_text": "not good" } },
+{ "match_phrase": { "review_text": "never again" } }
+],
+"minimum_should_match": 1
+}
+}
 }
