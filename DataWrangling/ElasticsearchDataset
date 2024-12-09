@@ -52,20 +52,19 @@ recipes_with_reviews = recipes_df.to_dict(orient='records')
 # Aggiungi le recensioni a ciascuna ricetta
 for recipe in recipes_with_reviews:
     recipe_id = recipe["RecipeId"]
-    recipe["Reviews"] = reviews_grouped.get(recipe_id, [])
+    reviews = reviews_grouped.get(recipe_id, [])
+    if reviews:  # Aggiungi solo se la lista di recensioni non è vuota
+        recipe["Reviews"] = reviews
 
 # Gestisci NaN (None) prima della scrittura nel JSON
 recipes_with_reviews = [handle_nan(recipe) for recipe in recipes_with_reviews]
 
 # Scrittura del JSON con gestione di NaN
-output_file = "./Dataset/recipes_with_reviews.json"
-with open(output_file, "w", encoding="utf-8") as json_file:
-    json.dump(
-        recipes_with_reviews, 
-        json_file, 
-        indent=4, 
-        ensure_ascii=False, 
-        default=handle_nan
-    )
+output_file = "./Dataset/recipes_with_reviews.ndjson"
+with open(output_file, "w", encoding="utf-8") as ndjson_file:
+    for recipe in recipes_with_reviews:
+        json_line = json.dumps(recipe, ensure_ascii=False, default=handle_nan)
+        ndjson_file.write(json_line + "\n")
+
 
 print("CSV data successfully processed and saved as JSON!")
