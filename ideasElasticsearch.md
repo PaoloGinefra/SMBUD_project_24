@@ -313,8 +313,149 @@ PUT /reviews
 
 - Find the recipes fit for meal prep 🔍
 - Romantic dinner recipes 🔍
+
+```json
+
+GET /recipeswithreviews/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "range": {
+            "RecipeServings": {
+              "gte": 2,
+              "lte": 4
+            }
+          }
+        }
+      ],
+      "should": [
+        {
+          "multi_match": {
+            "query": "romantic dinner",
+            "fields": ["Reviews.Review", "Keywords", "Description"],
+            "type": "best_fields",
+            "operator": "or",
+            "boost": 2
+          }
+        },
+        {"range":{
+          "AggregatedRating": {
+            "gte": 3.5
+          }
+        }}
+      ]
+    }
+  }
+}
+```
+
 - Recipes for a party with a lot of servings🔍📊
-- Recipes without an oven with air fryer🔍📊
+
+```json
+GET /recipeswithreviews/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "range": {
+            "RecipeServings": {
+              "gte": 10
+            }
+          }
+        }
+      ],
+      "should": [
+        {
+          "match": {
+            "Keywords": {
+              "query": "party, large groups, gathering, celebration, event, buffet",
+              "operator": "or",
+              "boost": 2
+            }
+          }
+        },
+        {
+          "match": {
+            "RecipeCategory": {
+              "query": "Dessert, Appetizer, Main, Party, Buffet",
+              "operator": "or",
+              "boost": 1.5
+            }
+          }
+        },
+        {
+          "match": {
+            "Description": {
+              "query": "party, large groups, gathering, celebration, event",
+              "operator": "or",
+              "boost": 1.5
+            }
+          }
+        },
+        {
+          "match": {
+            "Reviews.Review": {
+              "query": "party, celebration, gathering, event, buffet",
+              "operator": "or",
+              "boost": 3
+            }
+          }
+        }
+      ],
+      "minimum_should_match": 1
+    }
+  }
+}
+```
+
+- Recipes without an oven with microwave🔍📊
+```json
+GET /recipeswithreviews/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "match": {
+            "RecipeInstructions": "microwave"
+        }}
+      ],
+      "must_not": [
+        {
+          "match": {
+            "Keywords": 
+            {
+              "query": "oven pan pot air fryer",
+              "operator": "and"
+            }
+            }
+        },
+        {
+          "match": {
+            "RecipeInstructions": {
+              "query": "oven pan pot air fryer",
+              "operator": "and"}
+            }
+        }
+      ],
+      "should": [
+        {
+          "match": {
+            "Keywords": "microwave"
+        }},
+        {
+          "match": {
+            "Reviews.Review": "microwave"
+        }}
+      ]
+    }
+  }
+}
+```
+
 - Recipes inspired by pop culture (movies, books, TV shows). 
 - Recipes with whatever I have in my fridge 🔍
 - Find the recipes with the best protein/calory ratio 🔍
