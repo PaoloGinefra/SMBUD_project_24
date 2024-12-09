@@ -1,5 +1,57 @@
 Mistakes:
 ID's should be keywords, not integers (slides)
+## Mapping recipes and reviews
+```json
+PUT /recipesandreviews
+{
+  "mappings": {
+    "properties": {
+      "RecipeId": { "type": "keyword" },
+      "Name": { "type": "text" },
+      "AuthorId": { "type": "keyword" },
+      "AuthorName": { "type": "text" },
+      "CookTime": { "type": "integer" },
+      "PrepTime": { "type": "integer" },
+      "TotalTime": { "type": "integer" },
+      "DatePublished": { "type": "date", "format": "strict_date_time" },
+      "Description": { "type": "text" },
+      "Images": { "type": "text" },
+      "RecipeCategory": { "type": "text" },
+      "Keywords": { "type": "text" },
+      "RecipeIngredientQuantities": { "type": "text" },
+      "RecipeIngredientParts": { "type": "text" },
+      "AggregatedRating": { "type": "float" },
+      "ReviewCount": { "type": "integer" },
+      "Calories": { "type": "float" },
+      "FatContent": { "type": "float" },
+      "SaturatedFatContent": { "type": "float" },
+      "CholesterolContent": { "type": "float" },
+      "SodiumContent": { "type": "float" },
+      "CarbohydrateContent": { "type": "float" },
+      "FiberContent": { "type": "float" },
+      "SugarContent": { "type": "float" },
+      "ProteinContent": { "type": "float" },
+      "RecipeServings": { "type": "integer" },
+      "RecipeYield": { "type": "integer" },
+      "RecipeInstructions": { "type": "text" },
+      "Reviews": {
+        "type": "nested", 
+        "properties": {
+          "ReviewId": { "type": "keyword" },
+          "RecipeId": { "type": "keyword" },
+          "AuthorId": { "type": "keyword" },
+          "AuthorName": { "type": "text" },
+          "Rating": { "type": "integer" },
+          "Review": { "type": "text" },
+          "DateSubmitted": { "type": "date", "format": "strict_date_time" },
+          "DateModified": { "type": "date", "format": "strict_date_time" }
+        }
+      }
+    }
+  }
+}
+
+```
 
 ## Mapping recipes
 
@@ -161,9 +213,16 @@ PUT /reviews
 }
 ```
 
-
-
-
+- Find the recipes fit for meal prep 🔍
+- Romantic dinner recipes 🔍
+- Recipes for a party with a lot of servings🔍📊
+- Recipes without an oven with air fryer🔍📊
+- Recipes inspired by pop culture (movies, books, TV shows). 
+- Recipes with whatever I have in my fridge 🔍
+- Find the recipes with the best protein/calory ratio 🔍
+- Recipes for Specific Dietary Restrictions 🔍
+- Seasonal Recipes (Based on Ingredients or Holidays) 🔍
+- Best Meal Plan for Nutritional Balance and Minimum Overlap 📊
 
 
 ## 1. Recipes that contain "healthy snacks" or are high-protein but exclude "dessert."
