@@ -6,45 +6,143 @@ PUT /recipesandreviews
 {
   "mappings": {
     "properties": {
-      "RecipeId": { "type": "keyword" },
-      "Name": { "type": "text" },
-      "AuthorId": { "type": "keyword" },
-      "AuthorName": { "type": "text" },
-      "CookTime": { "type": "integer" },
-      "PrepTime": { "type": "integer" },
-      "TotalTime": { "type": "integer" },
-      "DatePublished": { "type": "date", "format": "strict_date_time" },
-      "Description": { "type": "text" },
-      "Images": { "type": "text" },
-      "RecipeCategory": { "type": "text" },
-      "Keywords": { "type": "text" },
-      "RecipeIngredientQuantities": { "type": "text" },
-      "RecipeIngredientParts": { "type": "text" },
-      "AggregatedRating": { "type": "float" },
-      "ReviewCount": { "type": "integer" },
-      "Calories": { "type": "float" },
-      "FatContent": { "type": "float" },
-      "SaturatedFatContent": { "type": "float" },
-      "CholesterolContent": { "type": "float" },
-      "SodiumContent": { "type": "float" },
-      "CarbohydrateContent": { "type": "float" },
-      "FiberContent": { "type": "float" },
-      "SugarContent": { "type": "float" },
-      "ProteinContent": { "type": "float" },
-      "RecipeServings": { "type": "integer" },
-      "RecipeYield": { "type": "integer" },
-      "RecipeInstructions": { "type": "text" },
+      "RecipeId": {
+        "type": "keyword"
+      },
+      "Name": {
+        "type": "text",
+        "analyzer": "standard"
+      },
+      "AuthorId": {
+        "type": "keyword"
+      },
+      "AuthorName": {
+        "type": "text",
+        "analyzer": "standard"
+      },
+      "CookTime": {
+        "type": "integer"
+      },
+      "PrepTime": {
+        "type": "integer"
+      },
+      "TotalTime": {
+        "type": "integer"
+      },
+      "DatePublished": {
+        "type": "date",
+        "format": "strict_date_time"
+      },
+      "Description": {
+        "type": "text",
+        "analyzer": "standard"
+      },
+      "Images": {
+        "type": "text",
+        "index": false
+      },
+      "RecipeCategory": {
+        "type": "keyword"
+      },
+      "Keywords": {
+        "type": "text",
+        "fields": {
+          "raw": {
+            "type": "keyword"
+          }
+        }
+      },
+      "RecipeIngredientQuantities": {
+        "type": "text",
+        "fields": {
+          "raw": {
+            "type": "keyword"
+          }
+        }
+      },
+      "RecipeIngredientParts": {
+        "type": "text",
+        "fields": {
+          "raw": {
+            "type": "keyword"
+          }
+        }
+      },
+      "AggregatedRating": {
+        "type": "float"
+      },
+      "ReviewCount": {
+        "type": "integer"
+      },
+      "Calories": {
+        "type": "float"
+      },
+      "FatContent": {
+        "type": "float"
+      },
+      "SaturatedFatContent": {
+        "type": "float"
+      },
+      "CholesterolContent": {
+        "type": "float"
+      },
+      "SodiumContent": {
+        "type": "float"
+      },
+      "CarbohydrateContent": {
+        "type": "float"
+      },
+      "FiberContent": {
+        "type": "float"
+      },
+      "SugarContent": {
+        "type": "float"
+      },
+      "ProteinContent": {
+        "type": "float"
+      },
+      "RecipeServings": {
+        "type": "float" //TODO: check if integer is better
+      },
+      "RecipeYield": {
+        "type": "text",
+        "index": false
+      },
+      "RecipeInstructions": {
+        "type": "text",
+        "analyzer": "standard"
+      },
       "Reviews": {
         "type": "nested", 
         "properties": {
-          "ReviewId": { "type": "keyword" },
-          "RecipeId": { "type": "keyword" },
-          "AuthorId": { "type": "keyword" },
-          "AuthorName": { "type": "text" },
-          "Rating": { "type": "integer" },
-          "Review": { "type": "text" },
-          "DateSubmitted": { "type": "date", "format": "strict_date_time" },
-          "DateModified": { "type": "date", "format": "strict_date_time" }
+          "ReviewId": {
+            "type": "keyword"
+          },
+          "RecipeId": {
+            "type": "keyword"
+          },
+          "AuthorId": {
+            "type": "keyword"
+          },
+          "AuthorName": {
+            "type": "text",
+            "analyzer": "standard"
+          },
+          "Rating": {
+            "type": "float"
+          },
+          "Review": {
+            "type": "text",
+            "analyzer": "standard"
+          },
+          "DateSubmitted": {
+            "type": "date",
+            "format": "strict_date_time"
+          },
+          "DateModified": {
+            "type": "date",
+            "format": "strict_date_time"
+          }
         }
       }
     }
