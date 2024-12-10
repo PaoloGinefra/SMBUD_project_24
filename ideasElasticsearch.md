@@ -312,7 +312,9 @@ PUT /reviews
 ```
 
 - Find the recipes fit for meal prep 🔍
-- Romantic dinner recipes 🔍
+## Romantic dinner recipes 🔍
+
+> In order to find recipes for a romantic dinner we searched for those with a number of servings between 2 and 3 (fir for a dinner for 2 people depending on how much they eat) and we added a should clause to boost the ones that contain the word romantic either in the review, keyword or description, signaling that they were specificallt thought for that kind of event.
 
 ```json
 
@@ -325,33 +327,58 @@ GET /recipeswithreviews/_search
           "range": {
             "RecipeServings": {
               "gte": 2,
-              "lte": 4
+              "lte": 3
             }
           }
         }
       ],
       "should": [
         {
-          "multi_match": {
-            "query": "romantic dinner",
-            "fields": ["Reviews.Review", "Keywords", "Description"],
-            "type": "best_fields",
-            "operator": "or",
-            "boost": 2
+          "nested": {
+            "path": "Reviews",
+            "query": {
+              "match": {
+                "Reviews.Review": {
+                  "query": "romantic",
+                  "boost": 2
+                }
+              }
+            }
           }
         },
-        {"range":{
-          "AggregatedRating": {
-            "gte": 3.5
+        {
+          "match": {
+            "Keywords": {
+              "query": "romantic",
+              "boost": 2
+            }
           }
-        }}
+        },
+        {
+          "match": {
+            "Description": {
+              "query": "romantic",
+              "boost": 2
+            }
+          }
+        },
+        {
+          "range": {
+            "AggregatedRating": {
+              "gte": 3.5
+            }
+          }
+        }
       ]
     }
   }
 }
+
 ```
 
-- Recipes for a party with a lot of servings🔍📊
+## Recipes for a party with a lot of servings🔍📊
+
+>In order to find recipes fit to host a party we looked for those that had a number of servings greater then 10 in a must clause. We also added a should clause to boost the recipes specifically designed for parties (since they mention words related to it either in the keywords, category, description or review)
 
 ```json
 GET /recipeswithreviews/_search
@@ -396,11 +423,16 @@ GET /recipeswithreviews/_search
           }
         },
         {
-          "match": {
-            "Reviews.Review": {
-              "query": "party, celebration, gathering, event, buffet",
-              "operator": "or",
-              "boost": 3
+          "nested": {
+            "path": "Reviews",
+            "query": {
+              "match": {
+                "Reviews.Review": {
+                  "query": "party, celebration, gathering, event, buffet",
+                  "operator": "or",
+                  "boost": 3
+                }
+              }
             }
           }
         }
@@ -409,9 +441,13 @@ GET /recipeswithreviews/_search
     }
   }
 }
+
 ```
 
-- Recipes without an oven with microwave🔍📊
+## Recipes without an oven with microwave🔍📊
+
+> In order to find recipes that are made soley with a microwave we chose to use a must clause to find those recipes that ise a microwave in their instructions and a must not to filter out those who use any other appliance. Furthermore, we added a should clause to boost the recipes that also mention microwave in their keywords or reviews since this means that the microwave is considered an important step for them.
+
 ```json
 GET /recipeswithreviews/_search
 {
@@ -421,47 +457,241 @@ GET /recipeswithreviews/_search
         {
           "match": {
             "RecipeInstructions": "microwave"
-        }}
+          }
+        }
       ],
       "must_not": [
         {
           "match": {
-            "Keywords": 
-            {
+            "Keywords": {
               "query": "oven pan pot air fryer",
               "operator": "and"
             }
-            }
+          }
         },
         {
           "match": {
             "RecipeInstructions": {
               "query": "oven pan pot air fryer",
-              "operator": "and"}
+              "operator": "and"
             }
+          }
         }
       ],
       "should": [
         {
           "match": {
             "Keywords": "microwave"
-        }},
+          }
+        },
         {
-          "match": {
-            "Reviews.Review": "microwave"
-        }}
+          "nested": {
+            "path": "Reviews",
+            "query": {
+              "match": {
+                "Reviews.Review": "microwave"
+              }
+            }
+          }
+        }
       ]
     }
   }
 }
+
 ```
 
 - Recipes inspired by pop culture (movies, books, TV shows). 
-- Recipes with whatever I have in my fridge 🔍
-- Find the recipes with the best protein/calory ratio 🔍
-- Recipes for Specific Dietary Restrictions 🔍
-- Seasonal Recipes (Based on Ingredients or Holidays) 🔍
+
+## Recipes with whatever I have in my fridge 🔍
+```json
+GET /processed/_search
+{
+  "query": {
+    "match": {
+      "RecipeIngredientParts": {
+        "query": "chicken onion cheese",
+        "operator": "and"
+      }
+    }
+  }
+}
+```
+## Find the recipes with the best protein/calory ratio 
+```json
+GET /processed/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "range": {
+            "Calories": {
+              "gte": 400,
+              "lte": 600
+            }
+          }
+        },
+        {
+          "range": {
+            "ProteinContent": {
+              "gte": 30,
+              "lte": 30.7
+            }
+          }
+        }
+      ],
+      "should": [
+        {
+          "match": {
+            "Description": {
+              "query": "healthy gym protein fit strong weight nutritious",
+              "operator": "or",
+              "boost": 1
+            }
+          }
+        },
+        {
+          "match": {
+            "Keywords": {
+              "query": "healthy gym protein fit strong weight nutritious",
+              "operator": "or",
+              "boost": 2
+            }
+          }
+        },
+        {
+          "match": {
+            "RecipeCategory": {
+              "query": "healthy gym protein fit strong weight nutritious",
+              "operator": "or",
+              "boost": 2
+            }
+          }
+        },
+        {
+          "nested": {
+            "path": "Reviews",
+            "query": {
+              "match": {
+                "Reviews.Review": {
+                  "query": "healthy gym protein fit strong weight nutritious",
+                  "operator": "or",
+                  "boost": 1
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}
+
+```
+
+# Recipes for Specific Dietary Restrictions 🔍
+```json
+GET /processed/_search
+{
+  "query": {
+    "bool": {
+      "must_not": [
+        {
+          "match": {
+            "RecipeIngredientParts": {
+              "query": "flour gluten",
+              "operator": "and"
+            }
+          }
+        }
+      ],
+      "should": [
+        {
+          "match": {
+            "Keywords": "gluten free"
+          }
+        },
+        {
+          "match": {
+            "Description": "gluten free"
+          }
+        },
+        {
+          "match": {
+            "RecipeCategory": "gluten free"
+          }
+        },
+        {
+          "nested": {
+            "path": "Reviews",
+            "query": {
+              "match": {
+                "Reviews.Review": "gluten free"
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}
+
+```
+
+## Seasonal Recipes (Based on Ingredients or Holidays) 🔍
+```json
+GET /processed/_search
+{
+  "query": {
+    "bool": {
+      "should": [
+        {
+          "nested": {
+            "path": "Reviews",
+            "query": {
+              "match": {
+                "Reviews.Review": {
+                  "query": "christmas festivities winter cozy holidays",
+                  "operator": "or"
+                }
+              }
+            }
+          }
+        },
+        {
+          "match": {
+            "Description": {
+              "query": "christmas festivities winter cozy holidays",
+              "operator": "or"
+            }
+          }
+        },
+        {
+          "match": {
+            "Keywords": {
+              "query": "christmas festivities winter cozy holidays",
+              "operator": "or"
+            }
+          }
+        },
+        {
+          "match": {
+            "RecipeCategory": {
+              "query": "christmas festivities winter cozy holidays",
+              "operator": "or"
+            }
+          }
+        }
+      ]
+    }
+  }
+}
+
+```
+
 - Best Meal Plan for Nutritional Balance and Minimum Overlap 📊
+- fuzzyness per typos
 
 
 ## 1. Recipes that contain "healthy snacks" or are high-protein but exclude "dessert."
@@ -486,39 +716,42 @@ GET /recipes_in/_search
 ## 2.Aggregation by author name of the authors with the best reviews
 
 ```json
-GET /reviews/_search
+GET /recipeswithreviews/_search
 {
-  "size": 0,
+  "size": 2,
   "query": {
     "bool": {
-      "should": [
-        { "match": { "Review": "great" } },
-        { "match": { "Review": "excellent" } },
-        { "match": { "Review": "good" } },
-        { "match": { "Review": "amazing" } },
-        { "match": { "Review": "awesome" } }
+      "must": [
+        { "range": { "AggregatedRating": { "gte": 4, "lte": 5 } } },
+        {"nested":{
+          "path": "Reviews",
+          "query": {
+            "match": {
+              "Reviews.Review": {
+                "query": "great excellent good amazing awesome",
+                "operator": "or"
+            }
+          }
+        }}}
       ]
     }
   },
   "aggs": {
     "positive_sentiment_per_author": {
       "terms": {
-        "field": "AuthorId",
-        "order": { "_count": "desc" }
+        "field": "AuthorId"
       },
       "aggs": {
-        "projected_name": {
-          "top_hits": {
-            "_source": {
-              "includes": ["AuthorName"]
-            },
-            "size": 1
+        "average_rating": {
+          "avg": {
+            "field": "AggregatedRating"
           }
         }
       }
     }
   }
 }
+
 ```
 
 ## 3.Look for recipes that are easy and have a high rating
