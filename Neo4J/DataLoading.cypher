@@ -1,9 +1,9 @@
 LOAD CSV
-WITH HEADERS FROM "file: ///recipes(10000).csv" AS row
+WITH HEADERS FROM "file:///recipes(10000).csv" AS row
 WITH row
 WHERE row.RecipeId IS NOT null
 MERGE (r:Recipe { id: row.RecipeId })
-ON CREATE SET r.Name = row.Name, r.Calories = tofloat(row.Calories), r.RecipeServings = row.RecipeServings, r.CookTime = row.CookTime, r.PrepTime = row.PrepTime, r.TotalTime = row.TotalTime
+ON CREATE SET r.Name = row.Name, r.Calories = tofloat(row.Calories), r.RecipeServings = tointeger(row.RecipeServings), r.CookTime = duration(row.CookTime), r.PrepTime = duration(row.PrepTime), r.TotalTime = duration(row.TotalTime), r.FatContent = tofloat(row.FatContent), r.CarbohydrateContent = tofloat(row.CarbohydrateContent), r.ProteinContent = tofloat(row.ProteinContent)
 
 WITH r, row, trim(replace(row.Keywords, 'c(', '')) AS cleaned_keywords
 WITH r, row, trim(replace(cleaned_keywords, ')', '')) AS final_keywords
