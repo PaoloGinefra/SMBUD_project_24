@@ -42,7 +42,8 @@ PUT /recipesandreviews
         "index": false
       },
       "RecipeCategory": {
-        "type": "keyword"
+        "type": "text",
+        "analyzer": "standard"
       },
       "Keywords": {
         "type": "text",
@@ -312,7 +313,7 @@ PUT /reviews
 ```
 
 - Find the recipes fit for meal prep 🔍
-## Romantic dinner recipes 🔍
+## 1. Romantic dinner recipes 🔍
 
 > In order to find recipes for a romantic dinner we searched for those with a number of servings between 2 and 3 (fir for a dinner for 2 people depending on how much they eat) and we added a should clause to boost the ones that contain the word romantic either in the review, keyword or description, signaling that they were specificallt thought for that kind of event.
 
@@ -376,7 +377,7 @@ GET /recipeswithreviews/_search
 
 ```
 
-## Recipes for a party with a lot of servings🔍📊
+## 2. Recipes for a party with a lot of servings🔍📊
 
 >In order to find recipes fit to host a party we looked for those that had a number of servings greater then 10 in a must clause. We also added a should clause to boost the recipes specifically designed for parties (since they mention words related to it either in the keywords, category, description or review)
 
@@ -444,7 +445,7 @@ GET /recipeswithreviews/_search
 
 ```
 
-## Recipes without an oven with microwave🔍📊
+## 3. Recipes without an oven with microwave🔍📊
 
 > In order to find recipes that are made soley with a microwave we chose to use a must clause to find those recipes that ise a microwave in their instructions and a must not to filter out those who use any other appliance. Furthermore, we added a should clause to boost the recipes that also mention microwave in their keywords or reviews since this means that the microwave is considered an important step for them.
 
@@ -465,7 +466,7 @@ GET /recipeswithreviews/_search
           "match": {
             "Keywords": {
               "query": "oven pan pot air fryer",
-              "operator": "and"
+              "operator": "or"
             }
           }
         },
@@ -473,7 +474,7 @@ GET /recipeswithreviews/_search
           "match": {
             "RecipeInstructions": {
               "query": "oven pan pot air fryer",
-              "operator": "and"
+              "operator": "or"
             }
           }
         }
@@ -503,7 +504,7 @@ GET /recipeswithreviews/_search
 
 - Recipes inspired by pop culture (movies, books, TV shows). 
 
-## Recipes with whatever I have in my fridge 🔍
+## 4. Recipes with whatever I have in my fridge 🔍
 ```json
 GET /processed/_search
 {
@@ -517,7 +518,7 @@ GET /processed/_search
   }
 }
 ```
-## Find the recipes with the best protein/calory ratio 
+## 5. Find the recipes with the best protein/calory ratio 
 ```json
 GET /processed/_search
 {
@@ -590,7 +591,7 @@ GET /processed/_search
 
 ```
 
-# Recipes for Specific Dietary Restrictions 🔍
+# 6. Recipes for Specific Dietary Restrictions 🔍
 ```json
 GET /processed/_search
 {
@@ -600,8 +601,8 @@ GET /processed/_search
         {
           "match": {
             "RecipeIngredientParts": {
-              "query": "flour gluten",
-              "operator": "and"
+              "query": "milk cheese lactose yogurt",
+              "operator": "or"
             }
           }
         }
@@ -609,17 +610,17 @@ GET /processed/_search
       "should": [
         {
           "match": {
-            "Keywords": "gluten free"
+            "Keywords": "lactose free"
           }
         },
         {
           "match": {
-            "Description": "gluten free"
+            "Description": "lactose free intolerant"
           }
         },
         {
           "match": {
-            "RecipeCategory": "gluten free"
+            "RecipeCategory": "lactose free"
           }
         },
         {
@@ -627,7 +628,7 @@ GET /processed/_search
             "path": "Reviews",
             "query": {
               "match": {
-                "Reviews.Review": "gluten free"
+                "Reviews.Review": "lactose free intolerant"
               }
             }
           }
@@ -636,10 +637,9 @@ GET /processed/_search
     }
   }
 }
-
 ```
 
-## Seasonal Recipes (Based on Ingredients or Holidays) 🔍
+## 7. Seasonal Recipes (Based on Ingredients or Holidays) 🔍
 ```json
 GET /processed/_search
 {
@@ -694,35 +694,65 @@ GET /processed/_search
 - fuzzyness per typos
 
 
-## 1. Recipes that contain "healthy snacks" or are high-protein but exclude "dessert."
+## 8. Recipes that contain "healthy snacks" or are high-protein but exclude "dessert."
 
 ```json
-GET /recipes_in/_search
+GET /recipesandreviews/_search
 {
   "query": {
     "bool": {
+      "must":[
+        {"match": {"RecipeCategory": "Snacks"}},
+        {"range": { "ProteinContent": { "gte": 20 } } }
+      ],
       "should": [
-        { "match": { "Description": "healthy snacks" } },
-        { "range": { "ProteinContent": { "gte": 20 } } }
+        { "match": { 
+            "Description": {
+              "query": "healthy snack",
+              "operator": "and"
+            } } },
+        {
+          "nested": {
+            "path": "Reviews",
+            "query": {
+              "match": {
+                "Reviews.Review": {
+                  "query": "healthy snack",
+                  "operator": "and"
+                }
+              }
+            }
+          }
+        },
+        {
+          "match": {
+            "Keywords": {
+              "query": "healthy snack"
+            }
+          }
+        }
       ],
       "must_not": [
-        { "match":{"RecipeCategory": "dessert"} }
+        { "match":{"RecipeCategory": "dessert"} },
+        { "match":{"Keywords": "dessert"} }
       ]
     }
   }
 }
+
 ```
 
-## 2.Aggregation by author name of the authors with the best reviews
+## 9.Aggregation by author name of the authors with the best reviews
 
 ```json
-GET /recipeswithreviews/_search
+GET /recipesandreviews/_search
 {
   "size": 2,
   "query": {
     "bool": {
       "must": [
-        { "range": { "AggregatedRating": { "gte": 4, "lte": 5 } } },
+        {"range": { "AggregatedRating": { "gte": 4} } },
+        {"range": { "ReviewCount": { "gte": 10 } } },
         {"nested":{
           "path": "Reviews",
           "query": {
@@ -754,7 +784,40 @@ GET /recipeswithreviews/_search
 
 ```
 
-## 3.Look for recipes that are easy and have a high rating
+## 10. Popular recipes in a certain time interval
+```json
+GET /recipesandreviews/_search
+{
+  "query": {
+    "nested": {
+      "path": "Reviews",
+      "query": {
+        "range": {
+          "Reviews.DateSubmitted": {
+            "gte": "2010-01-01T00:00:00Z",
+            "lt": "2011-01-01T00:00:00Z",
+            "format": "strict_date_time"
+          }
+        }
+      }
+    }
+  },
+  "sort": [
+    {
+      "ReviewCount": {
+        "order": "desc"
+      }
+    }
+  ]
+}
+```
+
+
+
+
+
+
+## Look for recipes that are easy and have a high rating
 
 ```json
 GET /reviews/_search
@@ -783,7 +846,7 @@ GET /reviews/_search
 }
 ```
 
-## 4.Finds contraddicting reviews with respects to the rating, either good reviews with a low rating or bad reviews with a high rating (nb: non va bene perche non trova cose che sono davvero contraddizioni)
+## Finds contraddicting reviews with respects to the rating, either good reviews with a low rating or bad reviews with a high rating (nb: non va bene perche non trova cose che sono davvero contraddizioni)
 
 ```json
 GET /reviews/_search
@@ -844,7 +907,7 @@ GET /reviews/_search
 
 ```
 
-## 5. are vegan recipes considered good?
+## are vegan recipes considered good?
 
 ```json
 GET /reviews/_search
@@ -881,7 +944,7 @@ GET /reviews/_search
 }
 ```
 
-## 6. Recipes with certain ingredients and appliances
+## Recipes with certain ingredients and appliances
 
 ```json
 GET /recipes/_search
@@ -938,7 +1001,7 @@ GET /recipes/_search
 
 ## Analyze the average rating of recipes by cuisine or difficulty
 
-## 2. Detect Trends
+## Detect Trends
 
 Keyword Trends Over Time: Find how often "vegan" recipes are being reviewed each year.
 GET /recipes_in/\_search
@@ -958,7 +1021,7 @@ GET /recipes_in/\_search
 }
 }
 
-## 1. Count the frequency of positive or negative sentiment keywords in a document to derive sentiment.
+## Count the frequency of positive or negative sentiment keywords in a document to derive sentiment.
 
 {
 "aggs": {
@@ -971,7 +1034,7 @@ GET /recipes_in/\_search
 }
 }
 
-## 3. "More Like This" Queries
+## "More Like This" Queries
 
 {
 "query": {
@@ -984,7 +1047,7 @@ GET /recipes_in/\_search
 }
 }
 
-## 4. Personalized Search
+## Personalized Search
 
 Use Case: Recommend recipes based on a user’s preferences (e.g., high protein and low carb).
 {
@@ -1002,7 +1065,7 @@ Use Case: Recommend recipes based on a user’s preferences (e.g., high protein 
 }
 }
 
-## 5. Analyze the average rating of recipes by cuisine and difficulty
+## Analyze the average rating of recipes by cuisine and difficulty
 
 {
 "aggs": {
@@ -1022,13 +1085,13 @@ Use Case: Recommend recipes based on a user’s preferences (e.g., high protein 
 }
 }
 
-## 7. Find recipes with similar steps / number of steps
+## Find recipes with similar steps / number of steps
 
-## 8. Given in input some ingredients that the user has at home, search for the recipes with those ingredients and the highest rating.
+## Given in input some ingredients that the user has at home, search for the recipes with those ingredients and the highest rating.
 
-## 9. Look for the users that made the worst reviews (both based on rating and on words used)
+## Look for the users that made the worst reviews (both based on rating and on words used)
 
-## 10. Identify Sentiment Patterns in Reviews
+## Identify Sentiment Patterns in Reviews
 
 {
 "query": {
