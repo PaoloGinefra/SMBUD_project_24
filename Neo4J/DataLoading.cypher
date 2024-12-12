@@ -16,7 +16,9 @@ WITH r, row, trim(replace(row.RecipeIngredientParts, 'c(', '')) AS cleaned_ingre
 WITH r, row, trim(replace(cleaned_ingredients, ')', '')) AS final_ingredients
 WITH r, row, split(replace(final_ingredients, '"', ''), ', ') AS ingredients
 UNWIND ingredients AS ingredient
-MERGE (i:Ingredient { name: ingredient })
+WITH r, row, ingredient
+WHERE ingredient <> 'character(0'
+MERGE (i:Ingredient {name: ingredient})
 MERGE (r)-[: CONTAINS ]->(i)
 
 MERGE (rc:RecipeCategory { name: coalesce(row.RecipeCategory, 'Unknown') })
@@ -28,7 +30,7 @@ MERGE (u:User { id: row.AuthorId })
 MERGE (r)-[: CREATED_BY ]->(u)
 
 LOAD CSV
-WITH HEADERS FROM "file: ///reviews(10000).csv" AS reviewRow
+WITH HEADERS FROM "file:///reviews(10000).csv" AS reviewRow
 WITH reviewRow
 WHERE reviewRow.RecipeId IS NOT null
 MERGE (reviewer:User { id: reviewRow.AuthorId })
