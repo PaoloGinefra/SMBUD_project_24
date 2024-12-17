@@ -1,5 +1,8 @@
-Mistakes:
-ID's should be keywords, not integers (slides)
+Add:
+Complesse
+Check bonsai mapping
+
+
 ## Mapping recipes and reviews
 
 > We defined the mapping for our index statically, avoiding the use of dynamic mapping to prevent potential issues. This mapping explicitly covers every attribute in our dataset and guarantees a well-defined structure for the documents stored in the index.
@@ -407,25 +410,28 @@ GET /recipeswithreviewsfinal/_search
 ```json
 GET /recipeswithreviewsfinal/_search
 {
+  "runtime_mappings": {
+    "pcratio": {
+      "type": "double", 
+      "script": {
+        "source": """
+          if (doc['Calories'].size() > 0 && doc['Calories'].value != 0) {
+            emit(doc['ProteinContent'].value / doc['Calories'].value);
+          }
+        """
+      }
+    }
+  },
   "query": {
     "bool": {
       "must": [
         {
           "range": {
-            "Calories": {
-              "gte": 400,
-              "lte": 600
+            "pcratio": {
+              "gte": 0.2
+              }
             }
           }
-        },
-        {
-          "range": {
-            "ProteinContent": {
-              "gte": 30,
-              "lte": 30.7
-            }
-          }
-        }
       ],
       "should": [
         {
@@ -449,8 +455,7 @@ GET /recipeswithreviewsfinal/_search
           "match": {
             "RecipeCategory": {
               "query": "healthy gym protein fit strong weight nutritious",
-              "operator": "or",
-              "boost": 2
+              "operator": "or"
             }
           }
         },
@@ -471,6 +476,7 @@ GET /recipeswithreviewsfinal/_search
     }
   }
 }
+
 
 ```
 
@@ -524,6 +530,28 @@ GET /recipeswithreviewsfinal/_search
   }
 }
 ```
+## 7. How the popularity an ingredient changed in years
+```json
+GET /recipeswithreviewsfinal/_search
+{
+  "size": 1,
+  "query":{
+    "match": {
+      "RecipeIngredientParts": "corn"
+      }
+    },
+  "aggs": {
+    "by_review_year": {
+      "date_histogram": {
+        "field": "DatePublished",
+        "calendar_interval": "year",
+        "format": "yyyy"
+      }
+    }
+  }
+}
+```
+
 
 ## 7. Seasonal Recipes (Based on Ingredients or Holidays) 🔍
 >This query is structured using a bool query with a should clause to enhance the relevance of recipes related to specific seasonal occasions, particularly focusing on Christmas and winter holidays. The should clause means that at least one of the conditions inside it must be met for a recipe to be included in the results, but the more conditions it matches, the higher the score and priority of the recipe.
@@ -581,8 +609,67 @@ GET /recipeswithreviewsfinal/_search
 
 ```
 
-- Best Meal Plan for Nutritional Balance and Minimum Overlap 📊
-- fuzzyness per typos
+## Recipes grouped by calorie ranges and for each calorie range we see the protein sugar fat fiber ranges inside
+```json
+GET /recipeswithreviewsfinal/_search
+{
+  "size": 0,
+  "aggs": {
+    "calorie_ranges": {
+      "range": {
+        "field": "Calories",
+        "ranges": [
+          { "to": 1400, "key": "Low calorie" },
+          { "from": 1400, "to": 2000, "key": "Medium calorie" },
+          { "from": 2000, "key": "High calorie" }
+        ]
+      },
+      "aggs": {
+        "protein_ranges": {
+          "range": {
+            "field": "ProteinContent",
+            "ranges": [
+              { "to": 5, "key": "Low protein" },
+              { "from": 5, "to": 15, "key": "Medium protein" },
+              { "from": 15, "key": "High protein" }
+            ]
+          }
+        },
+        "fat_ranges": {
+          "range": {
+            "field": "FatContent",
+            "ranges": [
+              { "to": 5, "key": "Low fat" },
+              { "from": 5, "to": 15, "key": "Medium fat" },
+              { "from": 15, "key": "High fat" }
+            ]
+          }
+        },
+        "fiber_ranges": {
+          "range": {
+            "field": "FiberContent",
+            "ranges": [
+              { "to": 1, "key": "Low fiber" },
+              { "from": 1, "to": 5, "key": "Medium fiber" },
+              { "from": 5, "key": "High fiber" }
+            ]
+          }
+        },
+        "sugar_ranges": {
+          "range": {
+            "field": "SugarContent",
+            "ranges": [
+              { "to": 5, "key": "Low sugar" },
+              { "from": 5, "to": 15, "key": "Medium sugar" },
+              { "from": 15, "key": "High sugar" }
+            ]
+          }
+        }
+      }
+    }
+  }
+}
+```
 
 
 ## 8. Recipes that contain "healthy snacks" or are high-protein but exclude "dessert."
@@ -750,29 +837,7 @@ GET /recipeswithreviewsfinal/_search
 ```
 
 
-## 0. How many reviews were made for each year
-```json
-GET /recipesandreviews/_search
-{
-  "size": 0,
-  "aggs": {
-    "agg_reviews_by_year": {
-      "nested": {
-        "path": "Reviews"
-      },
-      "aggs": {
-        "by_review_year": {
-          "date_histogram": {
-            "field": "Reviews.DateSubmitted",
-            "calendar_interval": "year",
-            "format": "yyyy"
-          }
-        }
-      }
-    }
-  }
-}
-```
+
 
 
 
