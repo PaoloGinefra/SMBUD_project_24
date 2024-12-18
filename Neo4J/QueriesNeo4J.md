@@ -333,3 +333,102 @@ The result is a list of ingredients sorted by their significance in recipes with
      ORDER BY 
      AvgRating * log10(ReviewCount) DESC;
      ```
+
+## 9. Given a set of ingredient that user don't like, find pairs of ingredients they like that are often in the same recipe, in order to suggest the user ingredients that match well together. The result is ordered by descending number of co.occurences
+> INSERT INPUT
+
+This query identifies pairs of ingredients the user likes that frequently appear together in recipes, excluding any ingredients the user dislikes. The aim is to suggest ingredient combinations that match well and might appeal to the user based on their preferences.
+
+- WITH Clause:
+Defines a list of ingredients the user dislikes (NotLikedIngredients) to filter them out from the query.
+- MATCH Clause:
+Finds pairs of ingredients (i1 and i2) contained in the same recipe (r) through the :CONTAINS relationship.
+- WHERE Clause:
+Ensures the query only considers pairs of ingredients where:
+i1.name < i2.name: Prevents duplicate pairs (e.g., "A-B" and "B-A").
+Neither ingredient is in the NotLikedIngredients list: Excludes undesired ingredients from the analysis.
+- WITH Clause:
+Groups data by ingredient pairs and the recipes in which they co-occur.
+- RETURN Clause:
+Returns the names of the paired ingredients (Ingredient1 and Ingredient2).
+Calculates the number of distinct recipes where each pair appears together (CoOccurrenceCount).
+- ORDER BY Clause:
+Sorts the results by the number of co-occurrences in descending order, prioritizing the most frequent ingredient pairs.
+- Output:
+The query produces a ranked list of ingredient pairs that the user is likely to enjoy and that frequently appear together in recipes. This information can help generate suggestions for ingredient combinations that match well, potentially inspiring new recipes or meal ideas aligned with the user's preferences.
+
+    ```cypher
+     WITH 
+     ['butter','cheese', 'pineapple'] AS NotLikedIngredients
+     MATCH
+     (i1:Ingredient)<-[:CONTAINS]-(r:Recipe)-[:CONTAINS]->(i2:Ingredient)
+     WHERE
+     i1.name < i2.name 
+     AND NOT i1.name  IN NotLikedIngredients 
+     AND NOT i2.name IN NotLikedIngredients
+     WITH
+     i1, i2, r
+     RETURN
+     i1.name AS Ingredient1,
+     i2.name AS Ingredient2,
+     COUNT(DISTINCT r) AS CoOccurrenceCount
+     ORDER BY
+     CoOccurrenceCount DESC
+    ```
+
+## 10. Diet recipe - given a set of ingredient that the recipe should contain, find the recipe under a certain treshold of calories with the best ratio for protein and lowest ratio for fat. Return in the result also the average rating of the recipe.
+
+> INSERT INPUT
+
+This query is designed to find diet-friendly recipes that meet the following criteria:
+
+- Ingredient Inclusion: The recipe must contain specific ingredients, such as "chicken" and "spinach."
+
+- Calorie Restriction: The recipe must have a total calorie count of 500 or less.
+
+- High Protein and Low Fat:
+The query calculates the protein ratio, carbohydrate ratio, and fat ratio for each recipe by dividing the respective macronutrient content by the total calories.
+It then prioritizes recipes with the highest protein-to-fat efficiency, using the formula ProteinRatio * (1/FatRatio) for ranking.
+- Positive Reviews: The recipe must have an average review rating of 4.0 or higher.
+
+The query outputs the following details for each recipe that matches the criteria:
+
+- RecipeName: The name of the recipe.
+- AvgRating: The average review score for the recipe.
+- ProteinRatio: The ratio of protein to total calories (rounded to two decimal places).
+- CarboRatio: The ratio of carbohydrates to total calories (rounded to two decimal places).
+- FatRatio: The ratio of fat to total calories (rounded to two decimal places).
+
+Recipes are sorted by the highest protein-to-fat efficiency (ProteinRatio * (1/FatRatio)) in descending order, ensuring that recipes with the best protein-to-fat balance are prioritized.
+This query is particularly useful for users seeking healthy recipes that:
+
+- Contain specific ingredients.
+- Stay within calorie limits.
+- Maximize protein intake while minimizing fat content.
+- Have been rated highly by other users.
+
+    ```cypher
+    MATCH 
+    (recipe:Recipe)-[:CONTAINS]->(ingredient:Ingredient)
+    MATCH 
+    (recipe)<-[:FOR]-(review:Review)
+    WHERE 
+    ingredient.name IN ["chicken", "spinach"]  
+    AND recipe.Calories <= 500
+    WITH 
+    recipe, 
+    round(recipe.ProteinContent / recipe.Calories,2) AS protein_ratio,
+    round(recipe.CarbohydrateContent / recipe.Calories,2) AS carbo_ratio,
+    round(recipe.FatContent / recipe.Calories,2) AS fat_ratio,
+    avg(review.rating) AS avg_review_rating
+    WHERE 
+    avg_review_rating >= 4
+    RETURN 
+    recipe.Name AS RecipeName, 
+    avg_review_rating AS AvgRating, 
+    protein_ratio AS ProteinRatio, 
+    carbo_ratio AS CarboRatio, 
+    fat_ratio AS FatRatio
+    ORDER BY 
+    ProteinRatio * (1/FatRatio) DESC;
+    ```
