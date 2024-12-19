@@ -402,36 +402,30 @@ GET /recipeswithreviewsfinal/_search
 ```
 ## 5. Recipes with the Best Protein-Calorie Intake
 
->This query is designed to find recipes with a high protein content while ensuring they fall within a moderate calorie range. Specifically, it searches for recipes that meet the following criteria: calories must be between 400 and 600, and protein must fall between 30g and 30.7g. These conditions are specified using range queries within the must clause, as they form the core requirements of the search.
+>This query identifies recipes that have a high protein-to-calorie ratio while aligning with health-conscious and fitness-focused preferences. The main criteria is specified in the must clause, where the query filters for recipes with a protein-to-calorie ratio (pcratio) of at least 0.2, ensuring the selected recipes provide a significant amount of protein relative to their calorie content.
 
->Additionally, a should clause is included to boost the ranking of recipes that are likely to be considered healthy or fitness-oriented. The query looks for relevant keywords in the Description, Keywords, and RecipeCategory fields that are associated with fitness and health. Terms like "healthy," "gym," "protein," "fit," "strong," "weight," and "nutritious" are searched using match queries with an OR operator, meaning that if any of these words are found, they contribute to boosting the score of the recipe. The more matching terms the recipe contains, the higher its score will be, indicating its relevance to health-conscious users.
+To enhance the ranking of recipes that resonate with fitness and health goals, the query includes should clauses that boost relevance based on the presence of specific keywords. These keywords, such as "healthy," "gym," "protein," "fit," "strong," "weight," and "nutritious," are searched within the Description, Keywords, and RecipeCategory fields. Matches in these fields increase the recipe's score, with additional emphasis placed on matches in the Keywords field through a boost factor. The query also examines the Reviews field, looking for mentions of the same health-oriented terms within user reviews, further contributing to a recipe's relevance score.
 
->The query also examines the Reviews field for mentions of these same health-related terms. By combining the must clause for the core nutritional criteria and the should clauses for fitness-related keywords, the query prioritizes recipes that are rich in protein and align with the needs of individuals seeking nutritious, fitness-oriented meals.
+By combining the strict nutritional filter with keyword-based scoring, the query prioritizes recipes that meet the protein-to-calorie ratio threshold and are described or reviewed in a way that appeals to health-conscious or fitness-oriented users. Recipes with more keyword matches or relevant reviews are ranked higher, ensuring that the most nutritious and health-aligned options appear prominently in the results.
 ```json
 GET /recipeswithreviewsfinal/_search
 {
-  "runtime_mappings": {
-    "pcratio": {
-      "type": "double", 
-      "script": {
-        "source": """
-          if (doc['Calories'].size() > 0 && doc['Calories'].value != 0) {
-            emit(doc['ProteinContent'].value / doc['Calories'].value);
-          }
-        """
-      }
-    }
-  },
   "query": {
     "bool": {
-      "must": [
+      "filter": [
         {
-          "range": {
-            "pcratio": {
-              "gte": 0.2
-              }
+          "script": {
+            "script": {
+              "source": """
+                if (doc['Calories'].size() > 0 && doc['Calories'].value != 0) {
+                  return doc['ProteinContent'].value / doc['Calories'].value >= 0.2;
+                } else {
+                  return false;
+                }
+              """
             }
           }
+        }
       ],
       "should": [
         {
@@ -439,39 +433,39 @@ GET /recipeswithreviewsfinal/_search
             "Description": {
               "query": "healthy gym protein fit strong weight nutritious",
               "operator": "or"
+              }
             }
-          }
-        },
+          },
         {
           "match": {
             "Keywords": {
               "query": "healthy gym protein fit strong weight nutritious",
               "operator": "or",
               "boost": 3
+              }
             }
-          }
-        },
+          },
         {
           "match": {
             "RecipeCategory": {
               "query": "healthy gym protein fit strong weight nutritious",
               "operator": "or"
+              }
             }
-          }
-        },
+          },
         {
           "nested": {
             "path": "Reviews",
-            "query": {
-              "match": {
-                "Reviews.Review": {
-                  "query": "healthy gym protein fit strong weight nutritious",
-                  "operator": "or"
+              "query": {
+                "match": {
+                  "Reviews.Review": {
+                    "query": "healthy gym protein fit strong weight nutritious",
+                    "operator": "or"
+                    }
+                  }
                 }
               }
             }
-          }
-        }
       ]
     }
   }
@@ -530,7 +524,7 @@ GET /recipeswithreviewsfinal/_search
   }
 }
 ```
-## 7. How the popularity an ingredient changed in years
+## ?. How the popularity an ingredient changed in years
 ```json
 GET /recipeswithreviewsfinal/_search
 {
@@ -553,7 +547,7 @@ GET /recipeswithreviewsfinal/_search
 ```
 
 
-## 7. Seasonal Recipes (Based on Ingredients or Holidays) 🔍
+## ?. Seasonal Recipes (Based on Ingredients or Holidays) 🔍
 >This query is structured using a bool query with a should clause to enhance the relevance of recipes related to specific seasonal occasions, particularly focusing on Christmas and winter holidays. The should clause means that at least one of the conditions inside it must be met for a recipe to be included in the results, but the more conditions it matches, the higher the score and priority of the recipe.
 
 >Within the should clause, the query searches across four fields: Reviews, Description, Keywords, and RecipeCategory. These fields are examined for terms related to the holiday season, such as "christmas," "festivities," "winter," "cozy," and "holidays."
@@ -609,7 +603,7 @@ GET /recipeswithreviewsfinal/_search
 
 ```
 
-## Recipes grouped by calorie ranges and for each calorie range we see the protein sugar fat fiber ranges inside
+## 7.Recipes grouped by calorie ranges and for each calorie range we see the protein sugar fat fiber ranges inside
 ```json
 GET /recipeswithreviewsfinal/_search
 {
