@@ -25,36 +25,36 @@ The results are ordered based on a relevance score that considers both the compa
      
 
      ```
-                WITH 
-                $providedIngredients AS ingredients
-                MATCH 
-                (i:Ingredient)<-[:CONTAINS]-(r:Recipe)-[:CONTAINS]->(i1:Ingredient)
-                WHERE 
-                i.name IN ingredients AND NOT i1.name IN ingredients
-                WITH 
-                DISTINCT r, 
-                i1.name AS matchedIngredient,
-                ingredients,
-                COUNT(distinct i) as availableMatchedIngredients
-                MATCH 
-                (r)<-[:FOR]-(rev:Review)
-                WITH 
-                matchedIngredient, 
-                r, 
-                AVG(rev.rating) AS avgRating,
-                ingredients,
-                availableMatchedIngredients
-                MATCH 
-                (r)-[:CONTAINS]->(i:Ingredient)
-                WHERE 
-                i.name IN ingredients
-                RETURN 
-                matchedIngredient, 
-                COUNT(DISTINCT r) AS recipeCount, 
-                AVG(avgRating) AS avgOfAvgRatings, 
-                AVG(availableMatchedIngredients) as IngredientCompatibility
-                ORDER BY 
-                IngredientCompatibility * log10(recipeCount) DESC;
+     WITH 
+     $providedIngredients AS ingredients
+     MATCH 
+     (i:Ingredient)<-[:CONTAINS]-(r:Recipe)-[:CONTAINS]->(i1:Ingredient)
+     WHERE 
+     i.name IN ingredients AND NOT i1.name IN ingredients
+     WITH 
+     DISTINCT r, 
+     i1.name AS matchedIngredient,
+     ingredients,
+     COUNT(distinct i) as availableMatchedIngredients
+     MATCH 
+     (r)<-[:FOR]-(rev:Review)
+     WITH 
+     matchedIngredient, 
+     r, 
+     AVG(rev.rating) AS avgRating,
+     ingredients,
+     availableMatchedIngredients
+     MATCH 
+     (r)-[:CONTAINS]->(i:Ingredient)
+     WHERE 
+     i.name IN ingredients
+     RETURN 
+     matchedIngredient, 
+     COUNT(DISTINCT r) AS recipeCount, 
+     ROUND(AVG(avgRating),2) AS Rating, 
+     ROUND(AVG(availableMatchedIngredients),2) as Compatibility
+     ORDER BY 
+     Compatibility * log10(recipeCount) DESC;
      ```
 
 ## 2. Suggest recipes belonging to the same category of a given recipe within a calorie range similar and no shared ingredients.
@@ -82,7 +82,8 @@ This query is useful for recommending alternative recipes within the same catego
 
      ```cypher
      MATCH 
-     (r1:Recipe {Name: "Caprese Salad Tomatoes (Italian Marinated Tomatoes)"})-[:BELONGS_TO]->(c:RecipeCategory)<-[:BELONGS_TO]-(r2:Recipe)
+     (r1:Recipe {Name: $recipeName })-[:BELONGS_TO]->(c:RecipeCategory)
+     <-[:BELONGS_TO]-(r2:Recipe)
      WHERE 
      ABS(COALESCE(r1.Calories, 0) - COALESCE(r2.Calories, 0)) <= 100 
      AND r1 <> r2 
@@ -91,7 +92,8 @@ This query is useful for recommending alternative recipes within the same catego
      }
      RETURN 
      r2.Name AS SimilarRecipe,
-     round(ABS(COALESCE(r1.Calories, 0) - COALESCE(r2.Calories, 0)), 1) AS CalorieDifference
+     round(ABS(COALESCE(r1.Calories, 0) - COALESCE(r2.Calories, 0)), 1) 
+     AS CalorieDifference
      ORDER BY 
      CalorieDifference ASC;
      ```
@@ -122,8 +124,8 @@ This query is useful for users looking to prepare simple recipes with minimal in
      OR k.name = 'For Large Groups'
      WITH 
      r,
-     COLLECT(i.name) AS Ingredients,
-     COUNT(i) AS RequiredIngredients
+     COLLECT(DISTINCT i.name) AS Ingredients,
+     COUNT(DISTINCT i) AS RequiredIngredients
      RETURN 
      r.Name AS RecipeName,
      RequiredIngredients,
@@ -149,15 +151,15 @@ It retrieves recipes (suggested) that contain one or more of the same ingredient
 For each suggested recipe, the query counts the number of ingredients it shares with the user's high-rated recipes (matchingIngredients).
 - Sort and Limit Results:
 Suggested recipes are ordered in descending order based on the number of matching ingredients.
-The query limits the output to the top 5 most relevant recipe suggestions.
 
 This query is particularly useful for personalized recipe recommendations. It leverages the user's past preferences to suggest recipes with similar ingredient profiles, ensuring relevance and increasing the likelihood of user satisfaction.
 
      ```cypher
      MATCH 
-     (u:User)-[:WROTE]->(review:Review)-[:FOR]->(r:Recipe)-[:CONTAINS]->(i:Ingredient)
+     (u:User)-[:WROTE]->(review:Review)-[:FOR]->(r:Recipe)
+     -[:CONTAINS]->(i:Ingredient)
      WHERE 
-     review.rating > 4 AND u.name='Donna Tomko'
+     review.rating > 4 AND u.name= $userName
      MATCH 
      (suggested:Recipe)-[:CONTAINS]->(i)
      WHERE NOT
@@ -167,7 +169,7 @@ This query is particularly useful for personalized recipe recommendations. It le
      suggested.Name AS recipeName,
      matchingIngredients
      ORDER BY 
-     matchingIngredients DESC LIMIT 5;
+     matchingIngredients DESC;
      ```
 
 ## 5. Find the ingredients that appear in the highest number of categories (most diversified ingredients) and the average across all the categories of the average rating of the recipes containing that ingredient.
@@ -234,7 +236,8 @@ This query is designed to suggest recipes that are similar to the given one, bas
 
      ```cypher
      MATCH 
-     (r1:Recipe {Name: "Caprese Salad Tomatoes (Italian Marinated Tomatoes)"})-[:CONTAINS]->(i:Ingredient)<-[:CONTAINS]-(r2:Recipe),
+     (r1:Recipe {Name: $recipeName})-[:CONTAINS]->
+     (i:Ingredient)<-[:CONTAINS]-(r2:Recipe),
      (r1)-[:BELONGS_TO]->(c1:RecipeCategory),
      (r2)-[:BELONGS_TO]->(c2:RecipeCategory)
      OPTIONAL MATCH 
@@ -283,14 +286,14 @@ This query provides insights into recipe categories that require the least amoun
      MATCH 
      (r)-[:CONTAINS]->(i:Ingredient)
      WITH c, 
-          r, 
-          r.TotalTime.minutes AS totalTimeMinutes,
-          COUNT(DISTINCT i) AS numIngredients
+     r, 
+     r.TotalTime.minutes AS totalTimeMinutes,
+     COUNT(DISTINCT i) AS numIngredients
      WITH c, 
-          AVG(totalTimeMinutes) AS avgTotalTimeMinutes,
-          MIN(totalTimeMinutes) AS minTotalTimeMinutes,
-          MAX(totalTimeMinutes) AS maxTotalTimeMinutes,
-          AVG(numIngredients) AS avgIngredientsPerCategory
+     AVG(totalTimeMinutes) AS avgTotalTimeMinutes,
+     MIN(totalTimeMinutes) AS minTotalTimeMinutes,
+     MAX(totalTimeMinutes) AS maxTotalTimeMinutes,
+     AVG(numIngredients) AS avgIngredientsPerCategory
      RETURN 
      c.name AS category,
      tointeger(avgTotalTimeMinutes) AS avgTotalTimeMinutes,
@@ -358,8 +361,8 @@ Sorts the results by the number of co-occurrences in descending order, prioritiz
 The query produces a ranked list of ingredient pairs that the user is likely to enjoy and that frequently appear together in recipes. This information can help generate suggestions for ingredient combinations that match well, potentially inspiring new recipes or meal ideas aligned with the user's preferences.
 
     ```cypher
-     WITH 
-     ['butter','cheese', 'pineapple'] AS NotLikedIngredients
+    WITH 
+     $ingredients AS NotLikedIngredients
      MATCH
      (i1:Ingredient)<-[:CONTAINS]-(r:Recipe)-[:CONTAINS]->(i2:Ingredient)
      WHERE
@@ -373,7 +376,7 @@ The query produces a ranked list of ingredient pairs that the user is likely to 
      i2.name AS Ingredient2,
      COUNT(DISTINCT r) AS CoOccurrenceCount
      ORDER BY
-     CoOccurrenceCount DESC
+     CoOccurrenceCount DESC;
     ```
 
 ## 10. Diet recipe - given a set of ingredient that the recipe should contain, find the recipe under a certain treshold of calories with the best ratio for protein and lowest ratio for fat. Return in the result also the average rating of the recipe.
@@ -408,27 +411,27 @@ This query is particularly useful for users seeking healthy recipes that:
 - Have been rated highly by other users.
 
     ```cypher
-    MATCH 
-    (recipe:Recipe)-[:CONTAINS]->(ingredient:Ingredient)
-    MATCH 
-    (recipe)<-[:FOR]-(review:Review)
-    WHERE 
-    ingredient.name IN ["chicken", "spinach"]  
-    AND recipe.Calories <= 500
-    WITH 
-    recipe, 
-    round(recipe.ProteinContent / recipe.Calories,2) AS protein_ratio,
-    round(recipe.CarbohydrateContent / recipe.Calories,2) AS carbo_ratio,
-    round(recipe.FatContent / recipe.Calories,2) AS fat_ratio,
-    avg(review.rating) AS avg_review_rating
-    WHERE 
-    avg_review_rating >= 4
-    RETURN 
-    recipe.Name AS RecipeName, 
-    avg_review_rating AS AvgRating, 
-    protein_ratio AS ProteinRatio, 
-    carbo_ratio AS CarboRatio, 
-    fat_ratio AS FatRatio
-    ORDER BY 
-    ProteinRatio/FatRatio DESC;
+     MATCH 
+     (recipe:Recipe)-[:CONTAINS]->(ingredient:Ingredient)
+     MATCH 
+     (recipe)<-[:FOR]-(review:Review)
+     WHERE 
+     ingredient.name IN $ingredients 
+     AND recipe.Calories <= 500
+     WITH 
+     recipe, 
+     round(recipe.ProteinContent / recipe.Calories,2) AS protein_ratio,
+     round(recipe.CarbohydrateContent / recipe.Calories,2) AS carbo_ratio,
+     round(recipe.FatContent / recipe.Calories,2) AS fat_ratio,
+     avg(review.rating) AS avg_review_rating
+     WHERE 
+     avg_review_rating >= 4
+     RETURN 
+     recipe.Name AS RecipeName, 
+     avg_review_rating AS AvgRating, 
+     protein_ratio AS ProteinRatio, 
+     carbo_ratio AS CarboRatio, 
+     fat_ratio AS FatRatio
+     ORDER BY 
+     ProteinRatio/FatRatio DESC;
     ```
