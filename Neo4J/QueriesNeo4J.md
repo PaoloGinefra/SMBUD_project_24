@@ -430,5 +430,5 @@ This query is particularly useful for users seeking healthy recipes that:
     carbo_ratio AS CarboRatio, 
     fat_ratio AS FatRatio
     ORDER BY 
-    ProteinRatio * (1/FatRatio) DESC;
+    ProteinRatio/FatRatio DESC;
     ```
