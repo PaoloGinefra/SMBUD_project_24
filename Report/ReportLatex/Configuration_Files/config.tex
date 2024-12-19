@@ -1,6 +1,9 @@
 % Define blue color typical of polimi
 \definecolor{bluepoli}{cmyk}{0.4,0.1,0,0.4}
 
+\usepackage{listings}
+
+
 % Custom theorem environments
 \declaretheoremstyle[
   headfont=\color{bluepoli}\normalfont\bfseries,
@@ -67,5 +70,7 @@
   \if@twocolumn\hbox{}\newpage\fi\fi\fi}
 \makeatother
 
-%For correctly numbering algorithms
-\numberwithin{algorithm}{chapter}
+\usepackage[outputdir=../../]{minted}   
+\usepackage{xcolor}
+
+

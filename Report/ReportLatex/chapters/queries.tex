@@ -24,39 +24,22 @@ It calculates the average number of provided ingredients matched in the recipes 
 The results are ordered based on a relevance score that considers both the compatibility of the matched ingredient (IngredientCompatibility) and the logarithm of the number of recipes (log10(recipeCount)) where it is found. This ensures a balance between ingredient synergy and recipe popularity.
 \end{itemize}
 
-        \subsubsection{Query}
-        \begin{verbatim}
-WITH 
-$providedIngredients AS ingredients
-MATCH 
-(i:Ingredient)<-[:CONTAINS]-(r:Recipe)-[:CONTAINS]->(i1:Ingredient)
-WHERE 
-i.name IN ingredients AND NOT i1.name IN ingredients
-WITH 
-DISTINCT r, 
-i1.name AS matchedIngredient,
-ingredients,
-COUNT(distinct i) as availableMatchedIngredients
-MATCH 
-(r)<-[:FOR]-(rev:Review)
-WITH 
-matchedIngredient, 
-r, 
-AVG(rev.rating) AS avgRating,
-ingredients,
-availableMatchedIngredients
-MATCH 
-(r)-[:CONTAINS]->(i:Ingredient)
-WHERE 
-i.name IN ingredients
-RETURN 
-matchedIngredient, 
-COUNT(DISTINCT r) AS recipeCount, 
-ROUND(AVG(avgRating),2) AS Rating, 
-ROUND(AVG(availableMatchedIngredients),2) as Compatibility
-ORDER BY 
-Compatibility * log10(recipeCount) DESC;
-        \end{verbatim}
+\subsubsection{Query}
+
+\begin{minted}[frame=single, style=tango, fontfamily=lmss, breaklines]{cypher}
+WITH $providedIngredients AS ingredients
+MATCH (i:Ingredient)<-[:CONTAINS]-(r:Recipe)-[:CONTAINS]->(i1:Ingredient)
+WHERE i.name IN ingredients AND NOT i1.name IN ingredients
+WITH DISTINCT r, i1.name AS matchedIngredient, ingredients, COUNT(distinct i) as availableMatchedIngredients
+MATCH (r)<-[:FOR]-(rev:Review)
+WITH matchedIngredient, r, AVG(rev.rating) AS avgRating, ingredients, availableMatchedIngredients
+MATCH (r)-[:CONTAINS]->(i:Ingredient)
+WHERE i.name IN ingredients
+RETURN matchedIngredient, COUNT(DISTINCT r) AS recipeCount, ROUND(AVG(avgRating),2) AS Rating, ROUND(AVG(availableMatchedIngredients),2) as Compatibility
+ORDER BY Compatibility * log10(recipeCount) DESC;
+\end{minted}
+
+        
     \subsubsection{Results}
 The results change based on what ingredients we put as a parameter. In this table the parameter \$providedIngredients is set as the list \begin{verbatim}['chicken', 'curry']\end{verbatim}
     \begin{table}[h!]
