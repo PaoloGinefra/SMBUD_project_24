@@ -1,15 +1,4 @@
-Add:
-Complesse
-Check bonsai mapping
-
-
 ## Mapping recipes and reviews
-
-> We defined the mapping for our index statically, avoiding the use of dynamic mapping to prevent potential issues. This mapping explicitly covers every attribute in our dataset and guarantees a well-defined structure for the documents stored in the index.
-Fields such as RecipeId, AuthorId, and ReviewId were set as type keyword, as they contain structured, consistent content that does not require analysis or tokenization for search purposes. For fields containing textual content, such as names, instructions, and reviews, we used the text field type and applied the standard analyzer. This allows Elasticsearch to perform full-text searches and relevance-based querying.
-Numerical fields, like the ones for quantities and times, were mapped as either float or integer, depending on the specific requirements of the data. Dates in the dataset were defined as date fields with the "strict_date_time" format, that matches the dataset’s date representation. The strict_date_time format follows the pattern yyyy-MM-dd'T'HH:mm:ss.SSSZ, for example, 2023-12-17T15:30:00.000Z.
-In our mapping, certain fields are configured with "index": false. This setting ensures that these fields are not searchable or usable in filtering operations.
-
 ```json
 PUT /recipesandreviews
 {
@@ -583,12 +572,7 @@ GET /recipeswithreviewsfinal/_search
 ```
 
 
-## ?. Seasonal Recipes (Based on Ingredients or Holidays) 🔍
->This query is structured using a bool query with a should clause to enhance the relevance of recipes related to specific seasonal occasions, particularly focusing on Christmas and winter holidays. The should clause means that at least one of the conditions inside it must be met for a recipe to be included in the results, but the more conditions it matches, the higher the score and priority of the recipe.
-
->Within the should clause, the query searches across four fields: Reviews, Description, Keywords, and RecipeCategory. These fields are examined for terms related to the holiday season, such as "christmas," "festivities," "winter," "cozy," and "holidays."
->For each of these fields, the query uses a match query with an operator set to "or". This allows the query to find any of these holiday-related terms individually within the field. For example, if a recipe description contains the word "cozy" or "christmas," it will still be included in the results. The "or" operator increases the flexibility of the query, allowing it to match any one of the given words in the field.
->Additionally, the query checks Reviews using a nested query. Since reviews are stored as a nested object, the query specifically searches the Reviews.Review field for holiday-related terms. This ensures that recipes with relevant seasonal mentions in reviews (like user comments on winter or holiday-themed dishes) are also prioritized.
+## ?. Seasonal Recipes (Based on Ingredients or Holidays)
 ```json
 GET /recipeswithreviewsfinal/_search
 {
@@ -820,114 +804,3 @@ GET /recipes/_search
   }
 }
 ```
-
-## Analyze the average rating of recipes by cuisine or difficulty
-
-## Detect Trends
-
-Keyword Trends Over Time: Find how often "vegan" recipes are being reviewed each year.
-GET /recipes_in/\_search
-{
-"query": {
-"term": {
-"Keywords.keyword": "vegan"
-}
-},
-"aggs": {
-"vegan_reviews_over_time": {
-"date_histogram": {
-"field": "DatePublished",
-"calendar_interval": "year"
-}
-}
-}
-}
-
-## Count the frequency of positive or negative sentiment keywords in a document to derive sentiment.
-
-{
-"aggs": {
-"positive_words": {
-"terms": { "field": "review_text", "include": ["great", "awesome", "happy"] }
-},
-"negative_words": {
-"terms": { "field": "review_text", "include": ["bad", "terrible", "horrible"] }
-}
-}
-}
-
-## "More Like This" Queries
-
-{
-"query": {
-"more_like_this": {
-"fields": ["description", "ingredients"],
-"like": "A delicious and moist chocolate cake",
-"min_term_freq": 1,
-"max_query_terms": 12
-}
-}
-}
-
-## Personalized Search
-
-Use Case: Recommend recipes based on a user’s preferences (e.g., high protein and low carb).
-{
-"query": {
-"bool": {
-"must": [
-{ "range": { "protein": { "gte": 20 } } },
-{ "range": { "carbs": { "lte": 10 } } }
-],
-"should": [
-{ "match": { "cuisine": "Mediterranean" } },
-{ "match": { "difficulty": "easy" } }
-]
-}
-}
-}
-
-## Analyze the average rating of recipes by cuisine and difficulty
-
-{
-"aggs": {
-"by_cuisine": {
-"terms": { "field": "cuisine.keyword" },
-"aggs": {
-"by_difficulty": {
-"terms": { "field": "difficulty.keyword" },
-"aggs": {
-"average_rating": {
-"avg": { "field": "average_rating" }
-}
-}
-}
-}
-}
-}
-}
-
-## Find recipes with similar steps / number of steps
-
-## Given in input some ingredients that the user has at home, search for the recipes with those ingredients and the highest rating.
-
-## Look for the users that made the worst reviews (both based on rating and on words used)
-
-## Identify Sentiment Patterns in Reviews
-
-{
-"query": {
-"bool": {
-"must": [
-{ "match": { "review_text": "delicious amazing" } },
-{ "match": { "review_text": "awful terrible" } }
-],
-"boost": 2,
-"should": [
-{ "match_phrase": { "review_text": "not good" } },
-{ "match_phrase": { "review_text": "never again" } }
-],
-"minimum_should_match": 1
-}
-}
-}
