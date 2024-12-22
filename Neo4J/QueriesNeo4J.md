@@ -25,36 +25,19 @@ The results are ordered based on a relevance score that considers both the compa
      
 
      ```
-     WITH 
-     $providedIngredients AS ingredients
-     MATCH 
-     (i:Ingredient)<-[:CONTAINS]-(r:Recipe)-[:CONTAINS]->(i1:Ingredient)
-     WHERE 
-     i.name IN ingredients AND NOT i1.name IN ingredients
-     WITH 
-     DISTINCT r, 
-     i1.name AS matchedIngredient,
-     ingredients,
-     COUNT(distinct i) as availableMatchedIngredients
-     MATCH 
-     (r)<-[:FOR]-(rev:Review)
-     WITH 
-     matchedIngredient, 
-     r, 
-     AVG(rev.rating) AS avgRating,
-     ingredients,
-     availableMatchedIngredients
-     MATCH 
-     (r)-[:CONTAINS]->(i:Ingredient)
-     WHERE 
-     i.name IN ingredients
-     RETURN 
-     matchedIngredient, 
-     COUNT(DISTINCT r) AS recipeCount, 
-     ROUND(AVG(avgRating),2) AS Rating, 
-     ROUND(AVG(availableMatchedIngredients),2) as Compatibility
-     ORDER BY 
-     Compatibility * log10(recipeCount) DESC;
+     WITH $providedIngredients AS ingredients
+    MATCH (i:Ingredient)<-[:CONTAINS]-(r:Recipe)-[:CONTAINS]->(i1:Ingredient)
+    WHERE i.name IN ingredients AND NOT i1.name IN ingredients
+    WITH DISTINCT r, i1.name AS matchedIngredient, ingredients, 
+    COUNT(DISTINCT i) as availableMatchedIngredients
+    MATCH (r)<-[:FOR]-(rev:Review)
+    WITH matchedIngredient, r, AVG(rev.rating) AS avgRating, ingredients, availableMatchedIngredients
+    MATCH (r)-[:CONTAINS]->(i:Ingredient)
+    WHERE i.name IN ingredients
+    RETURN matchedIngredient, COUNT(DISTINCT r) AS recipeCount, 
+    ROUND(AVG(avgRating),2) AS Rating, 
+    ROUND(AVG(availableMatchedIngredients),2) AS Compatibility
+    ORDER BY Compatibility * log10(recipeCount) DESC;
      ```
 
 ## 2. Suggest recipes belonging to the same category of a given recipe within a calorie range similar and no shared ingredients.
@@ -86,7 +69,6 @@ This query is useful for recommending alternative recipes within the same catego
      <-[:BELONGS_TO]-(r2:Recipe)
      WHERE 
      ABS(COALESCE(r1.Calories, 0) - COALESCE(r2.Calories, 0)) <= 100 
-     AND r1 <> r2 
      AND NOT EXISTS {
      MATCH (r1)-[:CONTAINS]->(i:Ingredient)<-[:CONTAINS]-(r2)
      }
@@ -235,25 +217,10 @@ The results are sorted by the number of shared ingredients (SharedIngredients) i
 This query is designed to suggest recipes that are similar to the given one, based on shared ingredients and keywords. The output helps identify recipes that use similar ingredients or cover similar topics, making it useful for users seeking recipes with similar flavor profiles or themes.
 
      ```cypher
-     MATCH 
-     (r1:Recipe {Name: $recipeName})-[:CONTAINS]->
-     (i:Ingredient)<-[:CONTAINS]-(r2:Recipe),
-     (r1)-[:BELONGS_TO]->(c1:RecipeCategory),
-     (r2)-[:BELONGS_TO]->(c2:RecipeCategory)
-     OPTIONAL MATCH 
-     (r1)-[:DESCRIBED_BY]->(k:Keyword)<-[:DESCRIBED_BY]-(r2)
-     WHERE 
-     r1 <> r2
-     RETURN 
-     r2.Name AS SimilarRecipe, 
-     COUNT(DISTINCT i) AS SharedIngredients, 
-     COUNT(DISTINCT k) AS SharedKeywords, 
-     COLLECT(DISTINCT i.name) AS SharedIngredientsList, 
-     COLLECT(DISTINCT k.name) AS SharedKeywordsList, 
-     CASE WHEN c1.name = c2.name THEN "Yes" ELSE "No" END AS SameCategory
-     ORDER BY 
-     SharedIngredients DESC, 
-     SharedKeywords DESC;
+     MATCH (r1:Recipe {Name: \$recipeName})-[:CONTAINS]->(i:Ingredient)<-[:CONTAINS]-(r2:Recipe), (r1)-[:BELONGS_TO]->(c1:RecipeCategory), (r2)-[:BELONGS_TO]->(c2:RecipeCategory)
+     OPTIONAL MATCH (r1)-[:DESCRIBED_BY]->(k:Keyword)<-[:DESCRIBED_BY]-(r2)
+     RETURN r2.Name AS SimilarRecipe,  COUNT(DISTINCT k) AS SharedKeywords, COUNT(DISTINCT i) AS SharedIngredients, COLLECT(DISTINCT k.name) AS SharedKeywordsList, COLLECT(DISTINCT i.name) AS SharedIngredientsList, CASE WHEN c1.name = c2.name THEN "Yes" ELSE "No" END AS SameCategory
+     ORDER BY SharedKeywords DESC, SharedIngredients DESC;
      ```
 
 
