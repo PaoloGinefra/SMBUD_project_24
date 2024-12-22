@@ -2,7 +2,7 @@ LOAD CSV
 WITH HEADERS FROM "file:///recipes(10000).csv" AS row
 WITH row
 WHERE row.RecipeId IS NOT null
-MERGE (r:Recipe { id: tointeger(row.RecipeId) })
+MERGE (r:Recipe { id: row.RecipeId })
 ON CREATE SET r.Name = row.Name, r.Calories = tofloat(row.Calories), r.RecipeServings = tointeger(row.RecipeServings), r.CookTime = duration(row.CookTime), r.PrepTime = duration(row.PrepTime), r.TotalTime = duration(row.TotalTime), r.FatContent = tofloat(row.FatContent), r.CarbohydrateContent = tofloat(row.CarbohydrateContent), r.ProteinContent = tofloat(row.ProteinContent)
 
 WITH r, row, trim(replace(row.Keywords, 'c(', '')) AS cleaned_keywords
@@ -25,7 +25,7 @@ MERGE (rc:RecipeCategory { name: coalesce(row.RecipeCategory, 'Unknown') })
 MERGE (r)-[: BELONGS_TO ]->(rc)
 
 WITH r, row
-MERGE (u:User { id: tointeger(row.AuthorId) })
+MERGE (u:User { id: row.AuthorId })
   ON CREATE SET u.name = row.AuthorName // Ensure we only set the name on creation
 MERGE (r)-[: CREATED_BY ]->(u)
 
@@ -33,15 +33,15 @@ LOAD CSV
 WITH HEADERS FROM "file:///reviews(10000).csv" AS reviewRow
 WITH reviewRow
 WHERE reviewRow.RecipeId IS NOT null
-MERGE (reviewer:User { id: tointeger(reviewRow.AuthorId) })
+MERGE (reviewer:User { id: reviewRow.AuthorId })
   ON CREATE SET reviewer.name = reviewRow.AuthorName // Ensure name is set only on creation
 
 WITH reviewRow, reviewer
-MERGE (review:Review { id: tointeger(reviewRow.ReviewId), rating: tointeger(reviewRow.Rating) })
+MERGE (review:Review { id: reviewRow.ReviewId, rating: tointeger(reviewRow.Rating) })
 
 // Match the Recipe with the corresponding RecipeId from the reviews.csv
 WITH reviewRow, reviewer, review
-MATCH (recipe:Recipe { id: tointeger(reviewRow.RecipeId) })
+MATCH (recipe:Recipe { id: reviewRow.RecipeId })
 WITH recipe, reviewRow, reviewer, review
 MERGE (reviewer)-[:WROTE]->(review)
 MERGE (review)-[:FOR]->(recipe)
