@@ -1,6 +1,6 @@
 # SMBUD_project_24
 
-This repository is for the project 24/25 of the course "System and Methods for Big and Unstructured Data" at the PoliMi.
+This repository is for the project 24/25 of the course `System and Methods for Big and Unstructured Data` at the PoliMi.
 
 ## Project description and folder structure
 
