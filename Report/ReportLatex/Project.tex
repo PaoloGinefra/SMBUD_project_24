@@ -15,6 +15,7 @@
 %------------------------------------------------------------------------------
 
 % CONFIGURATIONS
+
 \usepackage{graphicx}
 
 \usepackage{parskip} % For paragraph layout
@@ -124,22 +125,21 @@
 
 \pagestyle{empty} % No page numbers
 \frontmatter % Use roman page numbering style (i, ii, iii, iv...) for the preamble pages
-
 \puttitle{
-	title=Systems and Methods for Big and Unstructured Data Project,
+	title=Systems and Methods for Big and Unstructured Data - Project,
 	name1=Paolo Ginefra, % Author Name and Surname
 	name2=Martina Missana, 
-	name3=Arianna Paone, 
+	name3=Arianna Paone,
 	academicyear=2024-2025,
 	groupnumber=16
-} % These info will be put into your Title page 
+} 
+% These info will be put into your Title page 
 
 %----------------------------------------------------------------------------
 %	PREAMBLE PAGES: ABSTRACT (inglese e italiano), EXECUTIVE SUMMARY
 %----------------------------------------------------------------------------
 \startpreamble
 \setcounter{page}{1} % Set page counter to 1
-
 %----------------------------------------------------------------------------
 %	LIST OF CONTENTS/FIGURES/TABLES/SYMBOLS
 %----------------------------------------------------------------------------
@@ -179,20 +179,7 @@
 \chapter{Extra}
 \input{Report/ReportLatex/chapters/extra}
 
-
-%-------------------------------------------------------------------------
-%	APPENDICES
-%-------------------------------------------------------------------------
-
 \cleardoublepage
-\addtocontents{toc}{\vspace{2em}} % Add a gap in the Contents, for aesthetics
-\appendix
-\chapter{Appendix A}
-If you need to include an appendix to support the research in your thesis, you can place it at the end of the manuscript.
-An appendix contains supplementary material (figures, tables, data, codes, mathematical proofs, surveys, \dots)
-which supplement the main results contained in the previous chapters.
-
-
 % LIST OF FIGURES
 \listoffigures
 

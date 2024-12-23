@@ -1,0 +1,17 @@
+The selected dataset is called "Food.com - Recipes and Reviews" and can be found \href{https://www.kaggle.com/datasets/irkaal/foodcom-recipes-and-reviews/data}{\textbf{here}}.
+
+The recipe dataset contains 522,517 recipes from 312 different categories. This dataset provides information about each recipe like cooking times, servings, ingredients, nutrition, instructions, and more. The reviews dataset contains 1,401,982 reviews from 271,907 different users. This dataset provides information about the author, rating, review text, and more. The data is provided as two CSV files: one for the recipes and one for the reviews. The reviews reference the recipes via the RecipeId in a relational fashion.
+
+Given the project’s requirement of having at least 20,000 data points and the large size of the dataset, the first step has been to scale it down.
+
+The "DataSplitterIndexed.py" Python script, is responsible for this operation. It randomly samples 10,000 reviews and saves them in a CSV file. Then it selects all the reviews referencing those recipes (effectively performing a join operation) and saves them in another CSV file.
+26,352 reviews survived this step. A basic cleansing step is also performed where double double-quotes ("") and escaped double quotes (\textbackslash") are replaced with regular double quotes ("), and any trailing backslashes (\textbackslash) are removed.
+
+Although enough for Neo4J, Elasticsearch requires some further pre-processing.
+In the ElasticsearchDataset Python script, additional adaptations were made to prepare the data for Elasticsearch queries. One such modification involved the duration fields: CookTime, PrepTime, and TotalTime, which were originally formatted using the ISO 8601 standard (e.g., PT1H1M representing 1 hour and 1 minute). To facilitate calculations, these durations are converted into integer values representing the total time in minutes.
+
+Another major adaptation was the merging of the recipes and reviews into a single ndjson file, done in order not to have separate indexes. This was done by first grouping the reviews by RecipeId, creating a dictionary where each key corresponds to a RecipeId, and the value is a list of associated reviews. The recipes were then transformed into a list of dictionaries, and for each recipe, its RecipeId was used to fetch the relevant reviews from the grouped data. If reviews were found, they were added to the recipe dictionary under the Reviews key.
+
+The combined recipes and reviews were written to an ndjson file. Each recipe was converted to a JSON string using json.dumps(), ensuring that invalid values such as NaN were replaced with null. Each JSON string was written to a new line in the file, with one recipe per line.
+
+Lastly, a formatting issue with four fields has been addressed: RecipeInstructions, RecipeIngredientParts, RecipeIngredientQuantities, and Keywords. These fields had values in a strange format, such as c("..."), so they were reformatted in the processing\_ndjson.py script. For each of these fields, the script checks if the value is in the c("...") format, removes the c(" and ") wrappers, splits the string by ", ", and then strips the extra quotes from each item. This process converts the fields into lists of strings, where each element in the list corresponds to an individual item from the original c("...") format.
