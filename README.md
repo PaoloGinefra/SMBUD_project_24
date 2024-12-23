@@ -22,5 +22,5 @@ The dataset is first sampled to reduce its size, and then it is preprocessed. Th
 
 The hosting of the databeses also allowed for some data analysis to be performed using a Python Notebook available [here](DataAnalysis/DataAnalysis.ipynb). Unfortunatly the notebook is not runnable without the credentials to the databases.
 
-Finally, a thorough report of the project can be found [here](Report/Report.pdf).
+Finally, a thorough report of the project can be found [here](Report/SMBUD_project_24_Report.pdf).
 ```
