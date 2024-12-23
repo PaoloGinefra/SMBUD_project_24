@@ -14,8 +14,6 @@ The assignment required to write 10 queries for each database, that can be found
 
 The dumps of the databases can be found in the [Dumps](Dumps) folder.
 
-```bash
-
 The dataset is first sampled to reduce its size, and then it is preprocessed. These steps are performed by several python scripts that can be found in the [DataWrangling](DataWrangling) folder.
 
 > As an extra, a webapp called [Taste trios](https://taste-trios-front-end.vercel.app/) has been developed to interact with the databases via a small selection of features. In order to access the database, they have both been hosted.
@@ -23,4 +21,7 @@ The dataset is first sampled to reduce its size, and then it is preprocessed. Th
 The hosting of the databeses also allowed for some data analysis to be performed using a Python Notebook available [here](DataAnalysis/DataAnalysis.ipynb). Unfortunatly the notebook is not runnable without the credentials to the databases.
 
 Finally, a thorough report of the project can be found [here](Report/SMBUD_project_24_Report.pdf).
+
+```
+
 ```
