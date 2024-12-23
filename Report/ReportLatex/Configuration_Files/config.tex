@@ -70,7 +70,72 @@
   \if@twocolumn\hbox{}\newpage\fi\fi\fi}
 \makeatother
 
+
+\usepackage[lighttt]{lmodern}
+
+\usepackage{textcomp}
+\usepackage{listings}
+\usepackage{upquote}
+
+\lstset{
+	numbers=none,
+	stepnumber=1,
+	numbersep=5pt,
+	basicstyle=\small\ttfamily,
+	keywordstyle=\color{bluepoli}\bfseries\ttfamily,
+	commentstyle=\color{bluepoli}\ttfamily,
+	stringstyle=\color{bluepoli}\ttfamily,
+	identifierstyle=,
+	showstringspaces=false,
+	aboveskip=3pt,
+	belowskip=3pt,
+	columns=flexible,
+	keepspaces=true,
+	breaklines=true,	
+	captionpos=b,
+	tabsize=2,
+	frame=none,
+}
+
+\lstset{upquote=true}
+
+
 \usepackage[outputdir=../../]{minted}   
-\usepackage{xcolor}
+\usepackage{environ}
+
+\makeatletter
+\AtBeginEnvironment{minted}{\dontdofcolorbox}
+\def\dontdofcolorbox{\renewcommand\fcolorbox[4][]{##4}}
+\makeatother
 
 
+\newenvironment{CypherQuery}[1][] % Optional argument for additional options
+{%
+\VerbatimEnvironment%
+\begin{minted}[frame=none, 
+    style=tango, 
+    fontfamily=cmtt,
+    breaklines,
+    #1 % Inject additional minted options
+  ]{cypher}
+}%
+{\end{minted}}
+
+\lstdefinelanguage{Elasticsearch}{
+  keywords={GET, POST, PUT, DELETE, _search, query, match, filter, bool},
+  sensitive=true,
+  morecomment=[l]{//},
+  morestring=[b]"
+}
+
+
+\newcommand{\mycdots}
+
+
+
+\usepackage{graphicx} 
+
+
+\usepackage{eurosym}
+
+\usepackage{hyperref}

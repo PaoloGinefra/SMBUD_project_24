@@ -1,0 +1,231 @@
+\section{Taste trios - the web app}
+In order to put this project's results to use in a "production environment" a small web app have been developed. Due to time, knowledge, and resource constraints, the developed system is meant to be more of a proof of concept than an actual finished product.
+
+The latest release of the "Taste Trios" application can be found \textbf{\href{https://taste-trios-front-end.vercel.app/}{here}}
+
+\subsection{Goals and principles$\implies$Feature selection}
+In order to guide the development process the following goals/principles have been identified:
+\begin{itemize}
+    \item The system must be fully deployed and accessible from anywhere
+    \item The total monetary cost of keeping the system running must amount to no more than \EUR{0}
+    \item Embracing the "proof of concept" mentality the system is not meant to handle a large user base and the overall performance is not a major concern
+    \item "Functionality over aesthetics" (a must given the authors' background)
+    \item The system must provide useful features for the targets of the analysis: off-site students
+    \item The system must interact with both the chosen NoSQL technologies (Neo4J, ElasticSearch) in a meaningful way
+\end{itemize}
+
+Given those guidelines, the following features have been chosen:
+\begin{enumerate}
+    \item \textbf{Pan-try it out}: A page that, given a list of ingredients, finds recipes that utilize the biggest number of them. This feature can be useful when trying to finish food supplies before the Winter break.
+    \item \textbf{Mix \& Max}: A page that, given a list of ingredients, finds which ingredients "pairs" the best with the given ones. The page can also suggest recipes with the matched ingredients. This feature can be helpful when deciding what to buy while grocery shopping.
+    \item \textbf{Elasticsearch Queries}: Reading JSONs can be daunting. This motivates the development of a page where both the presented Elasticsearch queries and their respective results are interpreted and made readable.
+\end{enumerate}
+
+\subsection{System Architecture and Design choices}
+The system is designed with a \textbf{three-tier architecture}, consisting of the \textbf{Presentation Layer (Front End)}, \textbf{Logic Layer (Backend)}, and \textbf{Data Layer}. Each layer utilizes modern (and free to use) technologies and deployment platforms to ensure efficiency, scalability, and maintainability.
+
+\subsubsection{Presentation Layer (Front End)}
+
+\begin{itemize}
+\item \textbf{Technology Stack}: React and Next.js
+\item \textbf{Deployment}: \href{https://vercel.com/}{Vercel}
+\item \textbf{Role}:
+\begin{itemize}
+\item Provides an interactive user interface (UI).
+\item Handles client-side routing and server-side rendering using Next.js.
+\item Ensures seamless user interaction by dynamically updating the UI without requiring full-page reloads.
+\end{itemize}
+\item \textbf{Communication}:
+\begin{itemize}
+\item Utilizes HTTPS protocols to communicate with the backend.
+\item Exchanges data in JSON format via RESTful APIs.
+\end{itemize}
+\end{itemize}
+
+\subsubsection{Logic Layer (Backend)}
+
+\begin{itemize}
+\item \textbf{Technology Stack}: Flask (a Python-based microframework)
+\item \textbf{Deployment}: \href{https://vercel.com/}{Vercel}
+\item \textbf{Role}:
+\begin{itemize}
+\item Manages requests from the front end and formulates responses by interacting with the Data Layer.
+\end{itemize}
+\item \textbf{Communication}:
+\begin{itemize}
+\item Exposes RESTful APIs over HTTPS.
+\item Exchanges data with the front end in JSON format.
+\end{itemize}
+\end{itemize}
+
+\subsubsection{Data Layer}
+
+The Data Layer is composed of two databases that are set up and filled as described previously:
+
+\subsubsection{Neo4j}
+\begin{itemize}
+\item \textbf{Hosting}: \href{https://neo4j.com/product/auradb/}{AuraDB(free tier)}
+\item \textbf{Role}:
+\begin{itemize}
+\item Manages data represented as nodes and relationships, enabling complex queries and graph-based analytics.
+\item Ideal for use cases like relationship mapping and network analysis.
+\end{itemize}
+\item \textbf{Communication}:
+\begin{itemize}
+\item Interacts with the Logic Layer via REST APIs.
+\item Queries are written in Cypher.
+\end{itemize}
+\end{itemize}
+
+\subsubsection{Elasticsearch}
+\begin{itemize}
+\item \textbf{Hosting}: \href{https://bonsai.io/}{Bonsai(free tier)}
+\item \textbf{Role}:
+\begin{itemize}
+\item Facilitates fast and efficient text-based searches and analytics.
+\item Handles indexing, filtering, and ranking of large datasets.
+\end{itemize}
+\item \textbf{Communication}:
+\begin{itemize}
+\item Interacts with the Logic Layer via Elasticsearch's RESTful API.
+\item Exchanges data in JSON format.
+\end{itemize}
+\end{itemize}
+
+\subsubsection{Serverless Aspects of the Architecture}
+\href{https://vercel.com/}{Vercel} is a serverless platform, meaning there is no need to manage or provision servers for deploying and running both the React/Next.js application and the Python backend. Static assets and server-side rendered pages are served dynamically, scaling automatically based on traffic.
+The serverless paradigm has been chosen for the following benefits:
+\begin{itemize}
+\item Automatic scaling.
+\item Simplified deployment and infrastructure maintenance.
+\end{itemize}
+
+\subsection{Backend APIs}
+To achieve the desired servers, the following backend API endpoints have been developed:
+
+\begin{itemize}
+\item\hypertarget{fun:checkIngredient} {\textbf{/api/neo4j/checkIngredient (POST)}}: Checks if a specified ingredient exists in the database. The request body contains the ingredient name. Since the ingredients are used both in Neo4J and ElasticSearch queries, an exact match is needed, thus this check the existence of the ingredient in the stricter DB: Neo4j. The following query is performed:
+\begin{CypherQuery}
+.
+MATCH (n:Ingredient) WHERE n.name = \$ingredient RETURN n
+\end{CypherQuery}
+
+\item \textbf{/api/neo4j/matchIngredients (POST)}: Matches recipes containing at least one of the provided ingredients. Returns recipes sorted by the number of matching ingredients. The request body contains the ingredient name and a limit on the number of responses.
+The following query is performed:
+\begin{CypherQuery}
+.
+MATCH (r:Recipe)-[:CONTAINS]->(i:Ingredient)
+WHERE i.name IN \$ingredients
+WITH r, count(i) AS matchingScore, COLLECT(i.name) AS matchingIngredients
+RETURN r, matchingScore, matchingIngredients ORDER BY matchingScore DESC
+LIMIT \$limit
+\end{CypherQuery}
+
+\item \hypertarget{fun:elasticsearch/matchIngredients}{\textbf{/api/elasticsearch/matchIngredients (POST)}}: Performs a similar function as above but uses Elasticsearch to query indexed recipe data. This allows fuzzier matches that can be desirable when dealing with user inputs.
+The following query is performed:
+\begin{lstlisting}[language=Elasticsearch]
+{
+    "query": {
+        "bool": {
+            "should": [{
+                "match": {
+                    "RecipeIngredientParts": {
+                        "query": " ".join(ingredients),
+                        "operator": "or"
+                    }
+                }
+            }]
+        }
+    }
+}
+\end{lstlisting}
+
+\item \hypertarget{fun:matchIngredientsAnd}{\textbf{/api/elasticsearch/matchIngredientsAnd (POST)}}: Returns recipes containing a specifically required ingredient and at least one additional ingredient from a provided list. The request body contains the ingredient list whose last item is the one that must be matched and a limit on the number of responses. The following query is performed:
+\begin{lstlisting}[language=Elasticsearch]
+{
+    "query": {
+        "bool": {
+            "filter": [
+                {
+                    "match":{
+                         "RecipeIngredientParts": ingredients[-1]
+                     }
+                 }
+            ],
+            "must": [
+                {
+                    "match": {
+                        "RecipeIngredientParts": {
+                            "query": " ".join(ingredients[:-1]),
+                            "operator": "or"
+                        }
+                    }
+                }
+            ]
+        }
+    }
+}
+\end{lstlisting}
+
+\item \textbf{/api/neo4j/getIngredients (POST)}: Retrieves all ingredients necessary for a specified recipe. The request body contains the id of the recipes. The following query is performed:
+\begin{CypherQuery}
+.
+MATCH (r:Recipe)-[:CONTAINS]->(i:Ingredient)
+WHERE r.id = \$recipe
+RETURN COLLECT(i.name) AS ingredients
+\end{CypherQuery}
+
+\item \hypertarget{fun:mixAndMax}{\textbf{/api/neo4j/mixAndMax (POST)}}: Suggests additional ingredients that maximize recipe compatibility based on the provided ingredients. The following query is performed: 
+\begin{CypherQuery}
+.
+WITH \$providedIngredients AS ingredients
+// Find recipes that contain an existing ingredient and additional matched ingredients
+MATCH (i:Ingredient)<-[:CONTAINS]-(r:Recipe)-[:CONTAINS]->(i1:Ingredient)
+WHERE i.name IN ingredients AND NOT i1.name IN ingredients
+WITH DISTINCT r, i1.name AS matchedIngredient, ingredients, COUNT(distinct i) as availableMatchedIngredients
+
+// Match reviews for these recipes and calculate the average rating for each matched recipe
+MATCH (r)<-[:FOR]-(rev:Review)
+WITH matchedIngredient, r, AVG(rev.rating) AS avgRating, ingredients, availableMatchedIngredients
+
+// Count the number of unique recipes for each matched ingredient
+MATCH (r)-[:CONTAINS]->(i:Ingredient)
+WHERE i.name IN ingredients
+RETURN matchedIngredient, COUNT(DISTINCT r) AS recipeCount, AVG(avgRating) AS avgOfAvgRatings, AVG(availableMatchedIngredients) as IngredientCompatibility
+ORDER BY IngredientCompatibility * log10(recipeCount) DESC
+\end{CypherQuery}
+\item \hypertarget{elasticsearch/queries}{\textbf{/api/elasticsearch/queries (GET)}}: Runs predefined Elasticsearch queries based on a query number parameter. The performed queries are the one described in Section \ref{sec:ElastisearchQueries}
+\end{itemize}
+
+\subsection{Feature implementation}
+\subsection*{Pan-try it out}
+This feature has been implemented as follows:
+\newcommand{\hyperLinkToAPI}[1]{\hyperlink{fun:#1}{\textbf{#1}}}
+\begin{enumerate}
+    \item The user can insert the desired ingredients in the input bar.
+    \item Upon submission the inserted ingredient is validated using \hyperLinkToAPI{checkIngredient}
+    \item Upon validation, recipe suggestions are obtained through \hyperLinkToAPI{elasticsearch/matchIngredients}
+    \item The matched recipes are displayed and the distribution of various attributes of the matched recipes are computed and plotted
+\end{enumerate}
+
+\subsection*{Mix \& Max}
+This feature has been implemented as follows:
+
+\begin{enumerate}
+    \item The user can insert the desired ingredients in the input bar.
+    \item Upon submission the inserted ingredient is validated using \hyperLinkToAPI{matchIngredientsAnd}
+    \item Upon validation, ingredient suggestions are obtained by calling  \hyperLinkToAPI{mixAndMax}
+    \item The matched ingredients are displayed and the distribution of various attributes of the matched recipes are computed and plotted
+    \item If the user presses on an ingredient, recipe suggestions are obtained using \hyperLinkToAPI{matchIngredientsAnd}, passing the selected ingredient as the last one,
+    and are displayed in a modal.
+\end{enumerate}
+
+\subsection*{Elasticsearch queries}
+This feature has been implemented as follows:
+
+\begin{enumerate}
+    \item The user can select one of the ten queries.
+    \item The selected query's body is displayed as a tree structure using a custom-made JSON parser
+    \item The user can then decide to run the query by pressing the appropriate button, which in turn calls \hyperLinkToAPI{elasticsearch/queries} with the right query number
+    \item The result of the query is then displayed. The majority of the queries return a set of recipes that are displayed as in the other features. Two of them return some aggregations that are displayed using the JSON tree parser
+\end{enumerate}
