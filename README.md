@@ -6,7 +6,7 @@ This repository is for the project 24/25 of the course `System and Methods for B
 
 The assignment can be found at [SMBUD Project-2024_2025.pdf](Assignment/SMBUD_Project_2024_2025.pdf).
 
-In a nutshell, the project consists in finding a dataset of at least 20,000 records, and then use two different NoSQL databases to store and query the data. The two databases we chose are `Neo4j` and `ElasticSearch`.
+In a nutshell, the project consists in finding a dataset of at least 20,000 records, and then use two different NoSQL databases to store and query the data. The two chosen database technologies are `Neo4j` and `ElasticSearch`.
 
 The chosen dataset is the [Food.com - Recipes and Review](https://www.kaggle.com/datasets/irkaal/foodcom-recipes-and-reviews/data) dataset which contains 522,517 recipes from 312 different categories and 1,401,982 reviews from 271,907 different users.
 
